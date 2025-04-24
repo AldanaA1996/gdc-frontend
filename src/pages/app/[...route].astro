@@ -1,0 +1,20 @@
+---
+import "@style/global.css";
+// Component imports
+import App from "@/app/App";
+import { Layout } from "@/components";
+import LayoutApp from "@/components/Layout/LayoutApp.astro";
+
+const title = "JW Helper LDC - Ingreso de Voluntario";
+
+export function getStaticPaths() {
+  return [{ params: { route: undefined } }, { params: { route: "home" } }];
+}
+---
+
+<script></script>
+<Layout title={title}>
+  <LayoutApp>
+    <App client:only="react" />
+  </LayoutApp>
+</Layout>

@@ -1,5 +1,5 @@
 import { BaseStrapiEntity } from "@/app/types/strapi-entities";
-import { base64ToFile } from "@util/files";
+import { base64ToFile } from "@utils/files";
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
 export type ApiResponseShape<T> = { data?: T; error?: any };

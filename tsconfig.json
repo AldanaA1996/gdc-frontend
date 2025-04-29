@@ -1,26 +1,25 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "jsxImportSource": "react"
-  },
-  "include": ["src/**/*", "astro.config.mjs"]
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "node",
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"types": ["astro/client"],
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"],
+			"@component/*": ["src/components/*"],
+			"@style/*": ["src/styles/*"],
+			"@util/*": ["utils/*"],
+			"@hook/*": ["src/app/hooks/*"],
+			"@img/*": ["src/assets/img/*"],
+			"@svg/*": ["src/assets/svg/*"],
+			"@icon/*": ["src/assets/svg/icon/*"],
+			
+			"@app/*": ["src/app/*"]
+		},
+		"jsx": "react-jsx",
+		"jsxImportSource": "react"
+	}
 }

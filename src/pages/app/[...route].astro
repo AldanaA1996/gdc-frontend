@@ -1,20 +1,27 @@
 ---
 import "@style/global.css";
-// Component imports
-import App from "@/app/App";
+//component imports
+import App from "@/app/App"
 import { Layout } from "@/components";
 import LayoutApp from "@/components/Layout/LayoutApp.astro";
+import { undefined } from "astro:schema";
+import LayoutPage from "@/components/Layout/LayoutPage.astro";
 
-const title = "JW Helper LDC - Ingreso de Voluntario";
+const title = "GDC Stock"
 
 export function getStaticPaths() {
-  return [{ params: { route: undefined } }, { params: { route: "home" } }];
+    return [
+        { params: { route: undefined } },
+        {params: {route: "login"}},
+        { params: { route: "dashboard" } },
+        
+    ];
 }
 ---
 
 <script></script>
-<Layout title={title}>
-  <LayoutApp>
-    <App client:only="react" />
-  </LayoutApp>
+<Layout title={title} >
+    <LayoutPage>
+        <App client:only="react" />
+    </LayoutPage>
 </Layout>

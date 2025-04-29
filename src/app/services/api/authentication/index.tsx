@@ -79,23 +79,21 @@ export const requestResetPassword = async (
 }
 
 export const requestChangePassword = async (
-	user: string,
-	password: string,
-	code: string
+	code: string,
+	newpassword: string
 ): ApiResponse<{ jwt: string; user: User }> => {
 	try {
 		const result = await api.post("/auth/reset-password", {
-			code,
-			password,
-			passwordConfirmation: password
+			password: newpassword,
+			passwordConfirmation: newpassword,
+			code: code
 		})
 
 		return result
-	} catch (error) {
+	} catch (error: any) {
 		return { error: error?.response }
 	}
 }
-
 export const mapLoginErrors = {
 	...mapApiErrors,
 	ValidationError: "Credenciales incorrectas"

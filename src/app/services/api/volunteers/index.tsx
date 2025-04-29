@@ -1,117 +1,116 @@
-import { User, Volunteer } from "@/app/types/strapi-entities";
+import { User, Volunteer } from "@/app/types/strapi-entities"
 import {
-  ApiResponse,
-  EntityMetadata,
-  findEntity,
-  handleUpload,
-  MediaFieldDescriptor,
-  StrapiFindParams,
-  strapiRequest,
-  verifyMediaFields,
-} from "..";
+	ApiResponse,
+	EntityMetadata,
+	findEntity,
+	handleUpload,
+	MediaFieldDescriptor,
+	StrapiFindParams,
+	strapiRequest,
+	verifyMediaFields
+} from ".."
 
 export const VOLUNTEER_ENTITY_METADATA: EntityMetadata = {
-  plural: "volunteers",
-  singular: "volunteer",
-  modelRefName: "api::volunteer.volunteer",
-  mediaFields: {
-    credential: "image",
-  },
-};
+	plural: "volunteers",
+	singular: "volunteer",
+	modelRefName: "api::volunteer.volunteer",
+	mediaFields: {
+		credential: "image"
+	}
+}
 
-const VOLUNTEERS = VOLUNTEER_ENTITY_METADATA.plural;
+const VOLUNTEERS = VOLUNTEER_ENTITY_METADATA.plural
 
-const MEDIA_FIELDS: MediaFieldDescriptor =
-  VOLUNTEER_ENTITY_METADATA.mediaFields;
+const MEDIA_FIELDS: MediaFieldDescriptor = VOLUNTEER_ENTITY_METADATA.mediaFields
 
 export const requestVolunteerByUser = async (
-  user: User
+	user: User
 ): ApiResponse<Volunteer> => {
-  try {
-    const result = await getVolunteersBy({
-      filters: {
-        volunteerBethelID: { $eq: user.username },
-      },
-    });
+	try {
+		const result = await getVolunteersBy({
+			filters: {
+				volunteerBethelID: { $eq: user.username }
+			}
+		})
 
-    if (result.data.length === 1) {
-      return { data: result.data[0] };
-    }
+		if (result.data.length === 1) {
+			return { data: result.data[0] }
+		}
 
-    return { error: { data: { error: { name: "DuplicateVolunteerError" } } } };
-  } catch (error) {
-    return { error: error?.response };
-  }
-};
+		return { error: { data: { error: { name: "DuplicateVolunteerError" } } } }
+	} catch (error) {
+		return { error: error?.response }
+	}
+}
 
 export const getAllVolunteers = () =>
-  strapiRequest<Volunteer[]>(VOLUNTEERS, "find");
+	strapiRequest<Volunteer[]>(VOLUNTEERS, "find")
 
 export const getVolunteerById = (documentId: string) =>
-  strapiRequest<Volunteer>(VOLUNTEERS, "findOne", { documentId });
+	strapiRequest<Volunteer>(VOLUNTEERS, "findOne", { documentId })
 
 export const createVolunteer = async (
-  data: Partial<Volunteer>
+	data: Partial<Volunteer>
 ): ApiResponse<Volunteer> => {
-  const currentMediaFiles = verifyMediaFields(MEDIA_FIELDS, data);
+	const currentMediaFiles = verifyMediaFields(MEDIA_FIELDS, data)
 
-  if (!currentMediaFiles.length) {
-    return strapiRequest<Volunteer>(VOLUNTEERS, "create", { data });
-  } else {
-    const result = await strapiRequest<Volunteer>(VOLUNTEERS, "create", {
-      data,
-    });
-    const uploadResult = await handleUpload<Volunteer>(
-      currentMediaFiles,
-      VOLUNTEER_ENTITY_METADATA,
-      result.data.id,
-      result.data.documentId
-    );
+	if (!currentMediaFiles.length) {
+		return strapiRequest<Volunteer>(VOLUNTEERS, "create", { data })
+	} else {
+		const result = await strapiRequest<Volunteer>(VOLUNTEERS, "create", {
+			data
+		})
+		const uploadResult = await handleUpload<Volunteer>(
+			currentMediaFiles,
+			VOLUNTEER_ENTITY_METADATA,
+			result.data.id,
+			result.data.documentId
+		)
 
-    if (Array.isArray(uploadResult)) {
-      return uploadResult[uploadResult.length - 1];
-    }
+		if (Array.isArray(uploadResult)) {
+			return uploadResult[uploadResult.length - 1]
+		}
 
-    return uploadResult;
-  }
-};
+		return uploadResult
+	}
+}
 
 export const updateVolunteer = async (
-  documentId: string,
-  data: Partial<Volunteer>
+	documentId: string,
+	data: Partial<Volunteer>
 ) => {
-  const currentMediaFiles = verifyMediaFields(MEDIA_FIELDS, data);
+	const currentMediaFiles = verifyMediaFields(MEDIA_FIELDS, data)
 
-  debugger;
+	debugger
 
-  if (!currentMediaFiles.length) {
-    return strapiRequest<Volunteer>(VOLUNTEERS, "update", { documentId, data });
-  } else {
-    const result = await strapiRequest<Volunteer>(VOLUNTEERS, "update", {
-      documentId,
-      data,
-    });
+	if (!currentMediaFiles.length) {
+		return strapiRequest<Volunteer>(VOLUNTEERS, "update", { documentId, data })
+	} else {
+		const result = await strapiRequest<Volunteer>(VOLUNTEERS, "update", {
+			documentId,
+			data
+		})
 
-    if (result.error) {
-      return result;
-    }
+		if (result.error) {
+			return result
+		}
 
-    const uploadResult = await handleUpload<Volunteer>(
-      currentMediaFiles,
-      VOLUNTEER_ENTITY_METADATA,
-      result.data.id,
-      documentId
-    );
+		const uploadResult = await handleUpload<Volunteer>(
+			currentMediaFiles,
+			VOLUNTEER_ENTITY_METADATA,
+			result.data.id,
+			documentId
+		)
 
-    if (Array.isArray(uploadResult)) {
-      return uploadResult[uploadResult.length - 1];
-    }
+		if (Array.isArray(uploadResult)) {
+			return uploadResult[uploadResult.length - 1]
+		}
 
-    return uploadResult;
-  }
-};
+		return uploadResult
+	}
+}
 export const deleteVolunteer = (documentId: string) =>
-  strapiRequest(VOLUNTEERS, "delete", { documentId });
+	strapiRequest(VOLUNTEERS, "delete", { documentId })
 
 export const getVolunteersBy = (params: StrapiFindParams) =>
-  findEntity<Volunteer>(VOLUNTEERS, params);
+	findEntity<Volunteer>(VOLUNTEERS, params)

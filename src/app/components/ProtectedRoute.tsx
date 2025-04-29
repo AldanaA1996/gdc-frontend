@@ -7,8 +7,6 @@ import { useOnlineStatus } from "../hooks/use-online-status";
 import { setToken } from "../services/api";
 import { requestVolunteerByUser } from "../services/api/volunteers";
 import { useAuthenticationStore } from "../store/authentication";
-import DropdownInline from "./DropdownInline";
-import { Avatar } from "./ui/avatar";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -30,7 +28,9 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       setHasFailedToLoadVolunteer(true);
     }
 
-    setCurrentVolunteer(result.data);
+    if (result.data) {
+      setCurrentVolunteer(result.data);
+    }
   };
 
   const [hasFailedToLoadVolunteer, setHasFailedToLoadVolunteer] =
@@ -39,7 +39,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const currentUser = useAuthenticationStore((state) => state.user);
   const currentVolunteer = useAuthenticationStore((state) => state.volunteer);
   const setCurrentVolunteer = useAuthenticationStore(
-    (state) => state.setCurrentVolunteer
+    (state) => state.setCurrentVolunteer,
   );
   const logout = useAuthenticationStore((state) => state.logout);
   const [initials, setInitials] = useState("");
@@ -66,54 +66,19 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
           .split(" ")
           .map((word) => word[0])
           .slice(0, 2)
-          .join("")
+          .join(""),
       );
     }
   }, [currentVolunteer]);
 
-  const onLogoutClick = () => {
-    logout();
-    navigate("/app");
-  };
+  // const onLogoutClick = () => {
+  //   logout();
+  //   navigate("/app");
+  // };
 
-  const isOnline = useOnlineStatus();
+  // const isOnline = useOnlineStatus();
 
-  return !isAuthenticated ? (
-    <Navigate to="/app" replace />
-  ) : (
-    <>
-      <DropdownInline
-        actions={[{ label: "Cerrar sesión", action: onLogoutClick }]}
-        asChild
-      >
-        <div className="fixed right-2 top-2 z-10">
-          <div
-            className={`flex flex-row items-center justify-between gap-2 ${
-              isOnline ? "bg-white" : "bg-red-300 ps-2"
-            }  transition-all duration-300 ease-out`}
-          >
-            <WifiOffIcon
-              className={`${isOnline ? "hidden" : ""} text-red-100`}
-            />
-            <span
-              className={`${
-                isOnline ? "hidden" : "flex"
-              } gap-2 font-mono text-red-100`}
-            >
-              Sin conexión
-            </span>
-            <Avatar
-              className={`flex cursor-pointer select-none items-center justify-center rounded-lg ${
-                isOnline ? "bg-white" : "bg-white/70"
-              } text-black shadow-md`}
-            >
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-          </div>
-        </div>
-      </DropdownInline>
-
-      {children}
-    </>
-  );
+  // return !isAuthenticated ? (
+  //   <Navigate to="/app" replace />
+  // )
 }

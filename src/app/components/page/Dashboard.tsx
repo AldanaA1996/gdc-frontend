@@ -1,13 +1,13 @@
-import React from "react";
-import Layout from "@/components/Layout";
+
+import Layout from "@/app/components/layout";
 import AddMaterialForm from "@/app/components/addMaterial-form";
 
-export function Home() {
+export function Dashboard() {
   return (
     <Layout>
-      <div className="flex flex-col  min-h-screen py-2 gap-4">
-        <div className="bg-gray-100 p-6 rounded-lg shadow-md mb-4">
-          <h2 className="text-2xl font-semibold">Bienvenido a GDC Stock</h2>
+      <div className="flex flex-col h-screen w-[100%] self-center gap-4 m-2">
+        <div className="bg-gray-100 text-center p-6 rounded-lg shadow-md mb-4">
+          <h2 className="text-2xl font-semibold">Bienvenido a Deposit Management</h2>
           <p className="mt-2 text-gray-600">
             Una ayuda para manejar su ingreso y egreso de materiales al deposito
           </p>
@@ -28,4 +28,4 @@ export function Home() {
     </Layout>
   );
 }
-export default Home;
+export default Dashboard;

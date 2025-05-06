@@ -1,15 +1,15 @@
-import { User, Volunteer } from "@/app/types/strapi-entities"
+import { User } from "@/app/types/strapi-entities"
 import { api, ApiResponse, mapApiErrors } from ".."
 import { updateUser } from "../user"
 import { VOLUNTEER_ENTITY_METADATA } from "../volunteers"
 
 export const requestLogin = async (
-	user: string,
+	email: string,
 	password: string
 ): ApiResponse<{ jwt: string; user: User }> => {
 	try {
 		const result = await api.post("/auth/local", {
-			identifier: user,
+			identifier: email,
 			password
 		})
 
@@ -24,14 +24,14 @@ export const requestRegister = async (
 	password: string,
 	email: string,
 	group: string,
-	volunteer: Volunteer
+	
 ): ApiResponse<{ jwt: string; user: User }> => {
 	try {
 		const result = await api.post("/auth/local/register", {
 			username,
 			email,
 			password,
-			volunteer: { set: [volunteer.documentId] }
+			
 		})
 
 		console.log("result", result)
@@ -49,10 +49,10 @@ export const requestRegister = async (
 		const resultUser = await updateUser(
 			user.id,
 			{
-				volunteer
+				
 				// group: { set: [group] },
 			},
-			[{ entity: VOLUNTEER_ENTITY_METADATA, set: [volunteer] }]
+			[{ entity: VOLUNTEER_ENTITY_METADATA, set: [user] }]
 		)
 		if (resultUser.error) {
 			return { error: resultUser.error }

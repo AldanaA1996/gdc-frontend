@@ -18,7 +18,12 @@ export default function App() {
         <Router>
             <Routes>
                 <Route path="/app" element={<Login />} />
-                <Route path="/app/dashboard" element={<Dashboard />} />
+
+                {/* Protected route for the dashboard page */}
+                <Route path="/app/dashboard" element={
+                    <ProtectedRoute>
+                        <Dashboard />
+                    </ProtectedRoute>} />
                 {/* Add other routes here */}
             </Routes>
         </Router>

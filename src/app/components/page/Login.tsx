@@ -1,16 +1,13 @@
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   mapLoginErrors,
   requestLogin,
-} from "@/app/services/api/authentication"
-import { setToken } from "@/app/services/api"
-import { useOnlineStatus } from "@/app/hooks/use-online-status"
-import { useAuthenticationStore } from "@/app/store/authentication"
+} from "@/app/services/api/authentication";
+import { setToken } from "@/app/services/api";
+import { useOnlineStatus } from "@/app/hooks/use-online-status";
+import { useAuthenticationStore } from "@/app/store/authentication";
 
 import {
   Card,
@@ -19,60 +16,50 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/app/components/ui/card"
-import { Button } from "@/app/components/ui/button"
-import { Input } from "@/app/components/ui/input" // <<-- Acá importamos el Input de shadcn
-
-const loginSchema = z.object({
-  identifier: z.string().email("Email inválido"),
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+} from "@/app/components/ui/card";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
 
 export default function Login() {
+  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [isDisabled, setIsDisabled] = useState(false);
+  const [isLoginDisabled, setIsLoginDisabled] = useState(false);
+  const [pendingLogin, setPendingLogin] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
+
   const token = useAuthenticationStore((state) => state.token);
   const storeToken = useAuthenticationStore((state) => state.setToken);
-  const setCurrentUser = useAuthenticationStore(
-    (state) => state.setCurrentUser,
-  );
+  const setCurrentUser = useAuthenticationStore((state) => state.setCurrentUser);
   const isOnline = useOnlineStatus();
 
-  const [pendingLogin, setPendingLogin] = useState(false);
-  const [loginError, setLoginError] = useState("");
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-  });
+  useEffect(() => {
+    setIsLoginDisabled(!(email && password) || !isOnline);
+  }, [email, password, isOnline]);
 
   useEffect(() => {
     if (token) {
       navigate("/app");
     }
-  }, [token]);
+  }, [token, navigate]);
 
-  const onSubmit = async (values: LoginFormValues) => {
-    if (!isOnline) return;
-
+  const getLogin = async () => {
+    setIsDisabled(true);
     setPendingLogin(true);
     setLoginError("");
+    setHasError(false);
 
-    const { data, error } = await requestLogin(
-      values.identifier,
-      values.password,
-    );
-
+    const { data, error } = await requestLogin(email, password);
     setPendingLogin(false);
 
     if (error || !data) {
       setLoginError(
-        mapLoginErrors[error?.data?.error?.name] || mapLoginErrors.default,
+        mapLoginErrors[error?.data?.error?.name] || mapLoginErrors.default
       );
+      setHasError(true);
+      setIsDisabled(false);
       return;
     }
 
@@ -82,8 +69,21 @@ export default function Login() {
     storeToken(jwt);
     setCurrentUser(user);
 
-    navigate("/app");
+    setTimeout(() => {
+      console.log("Login successful, redirecting to dashboard...", {token: jwt, user});
+      navigate("/app/dashboard");
+    }, 0);
+    setIsDisabled(false);
   };
+
+  const getInputClasses = (hasError: boolean, isDisabled: boolean) =>
+    `mb-2 rounded-md border bg-white p-3 focus:outline-none focus:ring-2 dark:bg-gray-700 ${
+      isDisabled ? "opacity-50" : ""
+    } ${
+      hasError
+        ? "border-red-500 focus:ring-red-500"
+        : "border-gray-300 focus:ring-blue-500"
+    }`;
 
   return (
     <Card className="w-96 mx-auto mt-20 bg-gray shadow-lg p-6 justify-center">
@@ -91,49 +91,65 @@ export default function Login() {
         <CardTitle>Login</CardTitle>
         <CardDescription>Inicia Sesión</CardDescription>
       </CardHeader>
+
       <CardContent>
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-          <Input
-            type="email"
-            placeholder="Email"
-            {...register("identifier")}
-            disabled={isSubmitting || !isOnline}
-          />
-          {errors.identifier && (
-            <p className="text-sm text-red-500">{errors.identifier.message}</p>
-          )}
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            getLogin();
+          }}
+        >
+          <fieldset disabled={isDisabled} className="contents">
+            <Input
+              required
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={getInputClasses(hasError, isDisabled)}
+            />
 
-          <Input
-            type="password"
-            placeholder="Contraseña"
-            {...register("password")}
-            disabled={isSubmitting || !isOnline}
-          />
-          {errors.password && (
-            <p className="text-sm text-red-500">{errors.password.message}</p>
-          )}
+            <Input
+              required
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={getInputClasses(hasError, isDisabled)}
+            />
 
-          <Button
-            type="submit"
-            disabled={isSubmitting || pendingLogin || !isOnline}
-          >
-            Iniciar sesión
-          </Button>
+            {hasError && (
+              <span className="flex items-center rounded-md bg-red-200 p-1 text-sm text-red-500">
+                {loginError}
+              </span>
+            )}
 
-          {pendingLogin && <p className="text-sm text-gray-500">Cargando...</p>}
-          {loginError && <p className="text-sm text-red-500">{loginError}</p>}
+            <Button
+              type="submit"
+              disabled={isLoginDisabled || pendingLogin}
+              className="w-full"
+            >
+              Iniciar sesión
+            </Button>
+
+            {pendingLogin && (
+              <p className="text-sm text-gray-500">Cargando...</p>
+            )}
+          </fieldset>
         </form>
       </CardContent>
+
       <CardFooter className="flex flex-col items-center justify-center">
         <div className="flex justify-between pb-4 w-full">
           <p className="text-sm text-gray-500">¿No tienes una cuenta?</p>
           <a className="text-sm text-blue-400" href="/register">
-            Registrate
+            Regístrate
           </a>
         </div>
-        <div className="flex justify-between border-t border-gray-300 pt-4 w-full">
+        <div className="flex justify-end border-t border-gray-300 pt-4 w-full">
           <a className="text-sm text-blue-400" href="/forgot-password">
-          ¿Olvidaste tu contraseña?
+            ¿Olvidaste tu contraseña?
           </a>
         </div>
       </CardFooter>

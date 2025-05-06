@@ -1,4 +1,4 @@
-import { User, Volunteer } from "@/app/types/strapi-entities"
+import { User } from "@/app/types/strapi-entities"
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import { removeToken } from "../services/api"
@@ -6,14 +6,13 @@ import { removeToken } from "../services/api"
 type AuthenticationState = {
 	token: string | null
 	user: User | null
-	volunteer: Volunteer | null
+	
 	logout: () => void
 	setToken: (token: string) => void
 	removeToken: () => void
 	setCurrentUser: (user: User) => void
 	removeCurrentUser: () => void
-	setCurrentVolunteer: (user: Volunteer) => void
-	removeCurrentVolunteer: () => void
+	
 }
 
 export const useAuthenticationStore = create<AuthenticationState>()(
@@ -25,7 +24,7 @@ export const useAuthenticationStore = create<AuthenticationState>()(
 			logout: () => {
 				set({ token: null })
 				set({ user: null })
-				set({ volunteer: null })
+				
 
 				removeToken()
 			},
@@ -33,8 +32,7 @@ export const useAuthenticationStore = create<AuthenticationState>()(
 			removeToken: () => set({ token: null }),
 			setCurrentUser: (user) => set({ user }),
 			removeCurrentUser: () => set({ user: null }),
-			setCurrentVolunteer: (volunteer) => set({ volunteer }),
-			removeCurrentVolunteer: () => set({ volunteer: null })
+			
 		}),
 		{
 			name: "authentication",

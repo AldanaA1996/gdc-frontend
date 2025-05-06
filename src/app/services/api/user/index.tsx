@@ -1,4 +1,4 @@
-import { Group, User, Volunteer } from "@/app/types/strapi-entities"
+import { Group, User} from "@app/types/strapi-entities"
 import {
 	ApiResponse,
 	EntityMetadata,
@@ -28,7 +28,7 @@ export const createUser = async (data: Partial<User>): ApiResponse<User> =>
 export const updateUser = async (
 	documentId: string,
 	data: Partial<User> & { volunteer?; group? },
-	relationActions?: RelationAction<Volunteer | Group>[]
+	relationActions?: RelationAction<Group>[]
 ) => {
 	for (const {
 		entity: { singular: entitySingular },

@@ -10,7 +10,10 @@ export const DEPARTMENT_ENTITY_METADATA: EntityMetadata = {
 const DEPARTMENTS = DEPARTMENT_ENTITY_METADATA.plural
 
 export const getAllDepartments = () =>
-	strapiRequest<Department[]>(DEPARTMENTS, "find")
+	strapiRequest<Department[]>(DEPARTMENTS, "find" , {
+		params: { populate: "*" }
+		
+	});
 
 export const getDepartmentById = (documentId: string) =>
 	strapiRequest<Department>(DEPARTMENTS, "findOne", { documentId })

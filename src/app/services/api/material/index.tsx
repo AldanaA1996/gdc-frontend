@@ -1,4 +1,4 @@
-import { Material } from "@/app/types/strapi-entities";
+import { Material, MaterialMovement } from "@/app/types/strapi-entities";
 import { EntityMetadata, findEntity, StrapiFindParams, strapiRequest } from "..";
 
 export const MATERIAL_ENTITY_METADATA: EntityMetadata = {
@@ -14,12 +14,23 @@ export const getAllMaterials = () => strapiRequest<Material[]>(MATERIALS, "find"
 export const getMaterialById = (documentId: string) =>
     strapiRequest<Material>(MATERIALS, "findOne", { documentId });
 
-export const createMaterial = (data: Partial<Material>) => {
+export const createMaterial = (data: Partial<Material>,  departmentId: number, movements: Partial<MaterialMovement>[]) => {
+    const payload = {
+        ...data,
+        department: departmentId,
+        material_movements: {
+            create: movements
+        }
+    };
     return strapiRequest<Material>(MATERIALS, "create", {
-        data,
-        params: { populate: "*" }
+        data: payload,
+        // method: "POST",
+        // body: JSON.stringify(payload),
+        params: { populate: ["department", "material_movements"] 
+
+        }
     });
-}
+};
 
 export const updateMaterial = (documentId: string, data: Partial<Material>) => {
     return strapiRequest<Material>(MATERIALS, "update", {

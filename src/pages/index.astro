@@ -3,10 +3,28 @@ import { Layout } from "@/components";
 import LayoutPage from "../components/Layout/LayoutPage.astro";
 import "../styles/global.css"
 ---
-
+<script is:inline>
+	const getThemePreference = () => {
+		if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+			return localStorage.getItem('theme');
+		}
+		return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+	};
+	const isDark = getThemePreference() === 'dark';
+	document.documentElement.classList[isDark ? 'add' : 'remove']('dark');
+ 
+	if (typeof localStorage !== 'undefined') {
+		const observer = new MutationObserver(() => {
+			const isDark = document.documentElement.classList.contains('dark');
+			localStorage.setItem('theme', isDark ? 'dark' : 'light');
+		});
+		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+	}
+</script>
 <Layout title="GDC Stock">
 	<LayoutPage>
 		<div class="flex flex-col items-center justify-center h-screen">
+			<img src="/public/images/logo.svg" alt="GDC Stock Logo" class="w-40 h-35" />
 			<h1 class="text-4xl font-bold mb-4">Welcome to GDC Stock</h1>
 			<p class="text-lg">Your one-stop solution for stock management.</p>
 			<a href="/app" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Get Started</a>

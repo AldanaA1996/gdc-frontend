@@ -1,4 +1,5 @@
 ---
+import type { GetStaticPaths } from "astro";
 import "@style/global.css";
 //component imports
 import App from "@/app/App"
@@ -10,12 +11,24 @@ import LayoutPage from "@/components/Layout/LayoutPage.astro";
 const title = "GDC Stock"
 
 export function getStaticPaths() {
-    return [
-        { params: { route: undefined } },
-        {params: {route: "login"}},
-        { params: { route: "dashboard" } },
-        
+    const departments = [
+        {documentId: "mb48g161ktc9ruajx2qpkd4b" }, //"Albañileria"
+        {documentId: "l3sm1plqcynn5lwa95r48yjj" }, // "Electricidad"
+        {documentId: "bwb94hplh4w1fsusgp5pmde9" }, // "Pintura"
+        {documentId: "z6ye62bhjig8ney4gm8uwwyx" }, //"Terminaciones"
+        {documentId: "r9vcw2mhuqo6iq9pp5ju8l7q" }, //"Herrería"
+        {documentId: "rfwnujforv9rciw4g9y6xqum" }, //"Pañol"
+        {documentId: "vinufw1sfzce9defkwqdnoip" }, //"Plomeria"
+        {documentId: "ocn3i76t0o9zbzztwu2j8zvs" } //"Finalización"
     ];
+    return [ { params: { route: undefined } },
+    { params: { route: "login" } },
+    { params: { route: "dashboard" } },
+    { params: { route: "departments" } },
+    ...departments.map((d) => ({
+      params: { route: `departments/${d.documentId}` },
+    })),
+];
 }
 ---
 

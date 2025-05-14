@@ -1,5 +1,6 @@
 import { Department } from "@/app/types/strapi-entities"
 import { EntityMetadata, findEntity, StrapiFindParams, strapiRequest } from ".."
+import { data } from "react-router"
 
 export const DEPARTMENT_ENTITY_METADATA: EntityMetadata = {
 	plural: "departments",
@@ -9,14 +10,28 @@ export const DEPARTMENT_ENTITY_METADATA: EntityMetadata = {
 
 const DEPARTMENTS = DEPARTMENT_ENTITY_METADATA.plural
 
-export const getAllDepartments = () =>
-	strapiRequest<Department[]>(DEPARTMENTS, "find" , {
-		params: { populate: "*" }
-		
-	});
+export const getAllDepartments = async () => 
+	strapiRequest<Department[]>(DEPARTMENTS, "find")
+  
+export const getDepartmentById = async (documentId: string) => {
+	const response = await strapiRequest<{ data: Department[] }> (DEPARTMENTS, "find", {
+		params: {
+			filters: {
+				documentId: {
+					$eq: documentId
+				}
+			},
+			populate: ["materials", "tools"]
+		}
+	})
+	console.log("Consultando departamento con documentId:", documentId);
 
-export const getDepartmentById = (documentId: string) =>
-	strapiRequest<Department>(DEPARTMENTS, "findOne", { documentId })
+	return {
+		data: response.data?.data?.[0],
+		error: response.error
+	}
+}
+
 
 export const createDepartment = (data: Partial<Department>) => {
 	return strapiRequest<Department>(DEPARTMENTS, "create", {

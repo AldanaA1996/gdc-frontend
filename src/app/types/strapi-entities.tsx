@@ -23,6 +23,9 @@ export interface Group extends BaseStrapiEntity {
 
 export interface Department extends BaseStrapiEntity {
     name: string;
+    materials?: Material[];
+    tools?: Tool[];
+    material_movements?: MaterialMovement[];
 }
 
 export interface Material extends BaseStrapiEntity {

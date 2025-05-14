@@ -65,10 +65,10 @@ MIT. Ver LICENSE.
 ### **Flujo de Préstamos**
 ```mermaid
 flowchart TD
-    A(["UsuarioA ingresa un material"]) --> B{"¿ya estaba en existencia?"}
+    A(["UsuarioA ingresa un material o herramienta"]) --> B{"¿ya estaba en existencia?"}
     B --> C["Si"] & D["No"]
     C --> n1(["No lo deja crear"])
-    D --> n2(["Se crea el nuevo material"])
+    D --> n2(["Se crea el nuevo material/herramienta"])
     n2 --> n3["Se relaciona con el departamento correspondiente"]
     n4(["UsuarioA edita un material"]) --> n5["¿el stock diminuye o aumenta?"]
     n5 --> n6["disminuye"] & n7["Aumenta"]

@@ -34,7 +34,7 @@ export interface Material extends BaseStrapiEntity {
     quantity: number;
     material_movements: MaterialMovement[];
     group?: Group[];
-    department?: Department[];
+    department?: number | Department[];
     unit: Medidas;
 }
 
@@ -43,8 +43,8 @@ export interface MaterialMovement extends BaseStrapiEntity {
     movement_type: MovimientosM;
     movement_date: Date;
     notes?: string;
-    material: Material;
-    department: Department;
+    material: number | Material; 
+    department: number | Department;
 
 }
 
@@ -68,6 +68,6 @@ export interface Volunteer extends BaseStrapiEntity {
 
 type Branch = "Argentina and Uruguay" | "Brazil";
 
-type Medidas= "Kg" | "Mts" | "Cms" | "Caja";
+export type Medidas= "Select"| "Kg" | "Mts" | "Cms" | "Caja" | "Unidad" | "Paquete" | "Litro" | "Gramo" | "Pieza" | "Bolsa" | "Otro" ;
 
-type MovimientosM = "entry" | "exit" ;
+export type MovimientosM = "entry" | "exit" ;

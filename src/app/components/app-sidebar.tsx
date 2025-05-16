@@ -1,4 +1,5 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
+import { HandHelping, Home, Inbox, Search, Settings, Drill, DoorOpen, UsersRound } from "lucide-react"
+
 
 import {
   Sidebar,
@@ -19,25 +20,31 @@ const items = [
     icon: Home,
   },
   {
+    title: "Tools",
+    url: "#",
+    icon: Drill,
+  },
+  {
     title: "Departamentos",
     url: "/app/departments",
-    icon: Inbox,
+    icon: DoorOpen,
   },
   {
     title: "Grupo",
     url: "#",
-    icon: Calendar,
+    icon: UsersRound,
   },
   {
     title: "Voluntarios",
     url: "#",
-    icon: Search,
+    icon: HandHelping,
   },
   {
     title: "Configuración",
     url: "#",
     icon: Settings,
   },
+  
 ]
 
 export function AppSidebar() {

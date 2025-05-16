@@ -5,12 +5,12 @@ import { ModeToggle } from "@/app/components/Modetoggle";
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-    
-        <AppSidebar />
+        <AppSidebar />         
+
         <main className="flex flex-1 p-4">{children}</main>
-    
+       
       <SidebarTrigger>Menu</SidebarTrigger>
-      <ModeToggle></ModeToggle>
+      
     </SidebarProvider>
   );
 }

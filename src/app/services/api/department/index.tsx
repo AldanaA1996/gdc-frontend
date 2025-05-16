@@ -24,10 +24,11 @@ export const getDepartmentById = async (documentId: string) => {
 			populate: ["materials", "tools"]
 		}
 	})
-	console.log("Consultando departamento con documentId:", documentId);
+	// console.log("Consultando departamento con documentId:", documentId);
+	// console.log("Respuesta completa:", JSON.stringify(response, null, 2));
 
 	return {
-		data: response.data?.data?.[0],
+		data: response.data?.[0],
 		error: response.error
 	}
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import  Layout  from "@/app/components/layout";
 import { useParams } from "react-router-dom";
 import { getDepartmentById } from "@/app/services/api/department";
 import { Department, Material, Tool } from "@/app/types/strapi-entities";
@@ -9,7 +10,8 @@ import {
   TabsContent
 } from "@/app/components/ui/tabs";
 import { Card } from "@/app/components/ui/card";
-import { set } from "astro:schema";
+import { ModeToggle } from "../../Modetoggle";
+
 
 export default function DepartmentDetailPage() {
   const { documentId } = useParams();
@@ -19,12 +21,12 @@ export default function DepartmentDetailPage() {
   
     const fetchDepartment = async () => {
       const {data: department, error} = await getDepartmentById(documentId);
-      console.log("respuesta de la API:", { error});
+      
       if (error) {
         console.error("Error al obtener el departamento:", error);
         return;
       }
-      console.log("Departamento obtenido:", department);
+    
       setDepartment(department);
     };
     fetchDepartment();
@@ -36,10 +38,12 @@ export default function DepartmentDetailPage() {
   const tools = department.tools ?? [];
 
   return (
-    <div className="p-6">
+    <Layout>
+     
+    <div className="flex flex-col items-center w-full">
+       
       <h1 className="text-3xl font-bold mb-6 text-center">{department.name}</h1>
-
-      <Tabs defaultValue="materials" className="w-full max-w-4xl mx-auto">
+      <Tabs defaultValue="materials" className="w-full">
         <TabsList className="grid grid-cols-2 w-full">
           <TabsTrigger value="materials">Materiales</TabsTrigger>
           <TabsTrigger value="tools">Herramientas</TabsTrigger>
@@ -68,11 +72,15 @@ export default function DepartmentDetailPage() {
               <Card key={tool.id} className="p-4 shadow-sm border">
                 <h2 className="text-lg font-semibold">{tool.name}</h2>
                 <p className="text-sm text-gray-500">{tool.description}</p>
+                <p className="text-sm text-gray-500">{tool.amount} disponibles</p>
               </Card>
             ))
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    
+    </div> 
+    </Layout>
   );
+ 
 }

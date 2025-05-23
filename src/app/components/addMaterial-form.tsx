@@ -26,7 +26,7 @@ const schema = z.object({
   quantity: z.number().min(1, 'La cantidad es requerida'),
   unit: z.enum(Medidas),
   department: z.string().min(1, 'El departamento es requerido'),
-  movement_type: z.enum(['entry', 'exit']),
+  movement_type: z.enum(MovimientosM),
   description: z.string().optional(),
 });
 
@@ -102,63 +102,6 @@ function AddMaterialForm() {
   }
 };
 
-//   const onSubmit = async (values: z.infer<typeof schema>) => {
-//     try {
-//       const deptId = Number(values.department);
-//       const departmentObj = departments.find(dep => dep.id === deptId);
-//       if (!departmentObj) {
-//         throw new Error("Departamento no encontrado");
-//       }
-  
-//       // Un solo request: material + movimiento de entrada
-//       const nuevoMaterial = await createMaterial(
-//         {
-//           name: values.name,
-//           quantity: values.quantity,
-//           unit: values.unit,
-//           description: values.description,
-          
-//         },
-//         deptId,
-//         [
-//           {
-//             quantity: values.quantity,
-//             movement_type: "entry",
-//             movement_date: new Date(),
-//             department: departmentObj,
-//             notes: values.description,
-//           }
-//         ])
-        
-//         const materialId = nuevoMaterial.data.id;
-// console.log("Payload del movimiento:", {
-//   quantity: values.quantity,
-//   movement_type: "entry",
-//   movement_date: new Date(),
-//   material: nuevoMaterial.data.id,
-//   department: departmentObj,
-//   notes: values.description,
-// });
-//       // 2. Crear movimiento de entrada
-//       const movementRes = await createMaterialMovement({
-//         quantity: values.quantity,
-//         movement_type: "entry",
-//         movement_date: new Date(),
-//         notes: values.description,
-//         material: nuevoMaterial.data,
-//         department: deptId,
-//       });
-
-//       console.log('Material y movimiento creados:', nuevoMaterial, movementRes);
-        
-      
-  
-//       console.log("Creado:", nuevoMaterial);
-//       form.reset();
-//     } catch (error) {
-//       console.error("Error al crear material o movimiento:", error);
-//     }
-//   };
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">

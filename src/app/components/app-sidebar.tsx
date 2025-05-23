@@ -21,7 +21,7 @@ const items = [
   },
   {
     title: "Tools",
-    url: "#",
+    url: "/app/addTool",
     icon: Drill,
   },
   {

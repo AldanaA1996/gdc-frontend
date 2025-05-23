@@ -24,6 +24,7 @@ export function getStaticPaths() {
     return [ { params: { route: undefined } },
     { params: { route: "login" } },
     { params: { route: "dashboard" } },
+    { params: { route: "addTool"} },
     { params: { route: "departments" } },
     ...departments.map((d) => ({
       params: { route: `departments/${d.documentId}` },

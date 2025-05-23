@@ -51,7 +51,11 @@ export interface MaterialMovement extends BaseStrapiEntity {
 export interface Tool extends BaseStrapiEntity {
     name: string;
     amount: number;
-    department?: Department[];
+     /** 
+     * Optional department reference, which can be either a department ID or an array of Department entities.
+     * Allows flexible association of a material with one or more departments.
+     */
+    department?: number | Department[];
     group?: Group[];
     description?: string;
     purchase_date?: Date;

@@ -2,6 +2,7 @@ import Login from "./components/page/Login";
 import Dashboard from "./components/page/Dashboard";
 import DepartmentsPage from "./components/page/departments/DepartmentsPage";
 import DepartmentDetailPage from "./components/page/departments/[documentId]";
+import ToolsPage from "./components/page/Tools";
 import { useEffect, useState } from "react";
 import { Route, BrowserRouter as Router, Routes  } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -48,6 +49,14 @@ export default function App() {
                         element={
                             <ProtectedRoute>
                               <DepartmentDetailPage/>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                <Route path="/app/addTool"
+                    element={
+                            <ProtectedRoute>
+                                <ToolsPage />
                             </ProtectedRoute>
                         }
                     />

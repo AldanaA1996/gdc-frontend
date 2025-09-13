@@ -1,9 +1,23 @@
 ---
-import { Layout } from "@/components";
+import Layout  from "../components/Layout/Layout.astro";
 import LayoutPage from "../components/Layout/LayoutPage.astro";
+import { useAuthenticationStore } from "@/app/store/authentication";
 import "../styles/global.css"
+
+
 ---
 <script is:inline>
+	import { useEffect } from "react";
+	import { useAuthenticationStore } from "@/app/store/authentication";
+
+	const token = useAuthenticationStore.getState().token;
+
+	useEffect(() => {
+		if (token) {
+			window.location.href= "/app"; 
+		}
+	}, []);
+
 	const getThemePreference = () => {
 		if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
 			return localStorage.getItem('theme');
@@ -21,28 +35,17 @@ import "../styles/global.css"
 		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 	}
 </script>
-<Layout title="GDC Stock">
-	<LayoutPage>
-		<div class="flex flex-col items-center justify-center h-screen">
-			<img src="/public/images/logo.svg" alt="GDC Stock Logo" class="w-40 h-35" />
-			<h1 class="text-4xl font-bold mb-4">Welcome to GDC Stock</h1>
-			<p class="text-lg">Your one-stop solution for stock management.</p>
-			<a href="/app" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Get Started</a>
-		</div>
-		<div class="flex flex-col items-center justify-center h-screen">
-			<h2 class="text-2xl font-bold mb-4">Features</h2>
-			<ul class="list-disc list-inside">
-				<li>Real-time stock updates</li>
-				<li>Easy-to-use interface</li>
-				<li>Comprehensive reporting</li>
-			</ul>
-			<a href="/features" class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Learn More</a>
-		</div>
-		<div class="flex flex-col items-center justify-center h-screen">
-			<h2 class="text-2xl font-bold mb-4">Contact Us</h2>
-			<p class="text-lg">Have questions? Reach out to us!</p>
-			<a href="/contact" class="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Get in Touch</a>
-		</div>
-	</LayoutPage>
-	
+
+<Layout title="GCSR F">
+  <LayoutPage>
+    <div class="flex flex-col items-center justify-center h-screen text-center">
+      <img src="/images/gdcF.jgp" alt="Logo" class="w-40 h-35 mb-6" />
+      <h1 class="text-4xl font-bold mb-4">Bienvenido GCSR F</h1>
+      <p class="text-lg mb-6">Gestión de stock simple y eficiente</p>
+
+      <a href="/login" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        Entrar
+      </a>
+    </div>
+  </LayoutPage>
 </Layout>

@@ -1,24 +1,35 @@
-import Login from "./components/page/Login";
-import Dashboard from "./components/page/Dashboard";
-import DepartmentsPage from "./components/page/departments/DepartmentsPage";
-import DepartmentDetailPage from "./components/page/departments/[documentId]";
-import ToolsPage from "./components/page/Tools";
+import Login from "@/app/components/page/Login";
+import Inventario from "@/app/components/page/Inventory";
+import Home from "./components/page/Home";
+import DepartmentsPage from "@/app/components/page/departments/DepartmentsPage";
+import DepartmentDetailPage from "@/app/components/page/departments/[id]";
+import ToolsPage from "@/app/components/page/Tools";
 import { useEffect, useState } from "react";
 import { Route, BrowserRouter as Router, Routes  } from "react-router-dom";
-import ProtectedRoute from "./components/ProtectedRoute";
-import { useAuthenticationStore } from "./store/authentication";
+import ProtectedRoute from "@/app/components/ProtectedRoute";
+import { useAuthenticationStore } from "@/app/store/authentication";
 import { useParams as useReactRouterParams } from "react-router-dom";
+import { supabase } from "@/app/lib/supabaseClient";
 
 
 export default function App() {
-    const token = useAuthenticationStore((state) => state.token)
-    const [isAuthenticated, setIsAuthenticated] = useState(!!token)
-    const { documentId } = useReactRouterParams();
-
+   const { setSession } = useAuthenticationStore()
+ 
     useEffect(() => {
-        setIsAuthenticated(!!token)
-    }
-    , [token])
+        supabase.auth.getSession().then(({ data }) =>{
+            if (data.session) {
+                setSession(data.session)
+            }
+        })
+    
+    const {
+        data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session)
+    })
+
+    return() => subscription.unsubscribe()
+}, [setSession])
 
    
 
@@ -29,15 +40,23 @@ export default function App() {
               
 
                 {/* Protected route for the dashboard page */}
-                
-                <Route path="/app/dashboard" 
-                        element={
-                            <ProtectedRoute>
-                                <Dashboard />
-                            </ProtectedRoute>
-                        }
-                 
-                    />
+                 <Route
+                    path="/app/home"
+                    element={
+                        <ProtectedRoute>
+                            <Home />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/app/inventario"
+                    element={
+                        <ProtectedRoute>
+                            <Inventario />
+                        </ProtectedRoute>
+                    }
+                />
+                    
                 <Route path="/app/departments" 
                         element={
                             <ProtectedRoute>

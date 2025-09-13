@@ -1,4 +1,4 @@
-import { HandHelping, Home, Inbox, Search, Settings, Drill, DoorOpen, UsersRound } from "lucide-react"
+import { ArrowUpDown, Home, Package, Search, Settings, Drill, DoorOpen, UsersRound } from "lucide-react"
 
 
 import {
@@ -16,11 +16,16 @@ import {
 const items = [
   {
     title: "Home",
-    url: "/app/dashboard",
+    url: "/app/home",
     icon: Home,
   },
   {
-    title: "Tools",
+    title: "Inventario",
+    url: "/app/inventario",
+    icon: Package,
+  },
+  {
+    title: "Herramientas",
     url: "/app/addTool",
     icon: Drill,
   },
@@ -29,21 +34,16 @@ const items = [
     url: "/app/departments",
     icon: DoorOpen,
   },
-  {
-    title: "Grupo",
-    url: "#",
-    icon: UsersRound,
-  },
-  {
-    title: "Voluntarios",
-    url: "#",
-    icon: HandHelping,
-  },
-  {
-    title: "Configuración",
-    url: "#",
-    icon: Settings,
-  },
+  // {
+  //   title: "Movimientos",
+  //   url: "#",
+  //   icon: ArrowUpDown,
+  // },
+  // {
+  //   title: "Voluntarios",
+  //   url: "#",
+  //   icon: UsersRound,
+  // },
   
 ]
 
@@ -52,7 +52,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>GDC Stock</SidebarGroupLabel>
+          <SidebarGroupLabel>S.A.E Depo</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (

@@ -5,13 +5,8 @@ import { z } from 'zod';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
-import type { Medidas } from '../types/strapi-entities';
-import type { MovimientosM } from '../types/strapi-entities';
-import { createMaterial } from '../services/api/material';
-import { getAllDepartments } from '../services/api/department';
-import { createMaterialMovement } from '../services/api/material_movement';
-
-import { Department } from '../types/strapi-entities';
+import { useAuthenticationStore } from '../store/authentication';
+import { supabase } from '../lib/supabaseClient';
 
 const MovimientosM = [
   "entry", "exit"
@@ -25,20 +20,25 @@ const schema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   quantity: z.number().min(1, 'La cantidad es requerida'),
   unit: z.enum(Medidas),
-  department: z.string().min(1, 'El departamento es requerido'),
-  movement_type: z.enum(MovimientosM),
+  department_id: z.string().min(1, 'El departamento es requerido'),
+  movementType: z.enum(MovimientosM),
   description: z.string().optional(),
 });
 
 function AddMaterialForm() {
-  const [departments, setDepartments] = useState<Department[]>([]);
- 
-  
+  const [departments, setDepartments] = useState<any[]>();
+  const user = useAuthenticationStore((state) => state.user);
 
   useEffect(() => {
-    const fetchDepartments = async () => {
-      const deptResponse = await getAllDepartments();
-      setDepartments(deptResponse.data); 
+    const fetchDepartments = async ()=> {
+      const {data, error } = await supabase
+      .from("departments")
+      .select("id, name");
+      if (error) {
+        console.error("Error al cargar departamentos:", error );
+      } else {
+        setDepartments(data || []);
+      }
     };
     fetchDepartments();
   }, []);
@@ -49,64 +49,58 @@ function AddMaterialForm() {
       name: '',
       quantity: 0,
       unit: 'Select',
-      department: '',
-      movement_type: 'entry',
+      department_id: '',
+      movementType: 'entry',
       description: '',
     },
   });
 
  const onSubmit = async (values: z.infer<typeof schema>) => {
-    try {
-      const deptId = Number(values.department);
-      const departmentObj = departments.find(dep => dep.id === deptId);
-      if (!departmentObj) {
-        throw new Error("Departamento no encontrado");
-      }
-    // 1. Crear el material
-    const nuevoMaterial = await createMaterial(
+  try {
+    //insertar material
+    const {data: material, error: matError} = await supabase
+     .from("inventory")
+     .insert([
       {
         name: values.name,
         quantity: values.quantity,
-        unit: values.unit,
         description: values.description,
+        department_id: values.department_id,
+        unit: values.unit,
+        created_at: new Date().toISOString(),
       },
-      departmentObj.id,
-      [
-        {
-          quantity: values.quantity,
-          department: departmentObj,
-          notes: values.description,
-        }
-      ]
-    );
+     ])
+     .select()
+     .single();
 
-    console.log("Material creado:", nuevoMaterial);
+    if (matError) throw matError;
 
+    //insertar mov en activity
+    const horaActual = new Date().toLocaleTimeString('en-GB')
+    const { error: actError } = await supabase.from("activity").insert([
+      {
+        material: material.id,
+        movementType: values.movementType,
+        created_by: user?.id,
+        created_at: horaActual,
+        created_date: new Date().toISOString(),
+      },
+    ]);
 
+    if (actError) throw actError;
 
-    const movementPayload = {
-      quantity: values.quantity,
-      movement_type: values.movement_type,
-      movement_date: new Date(), // 👈 IMPORTANTE: string, no Date
-      material: nuevoMaterial.data.id,          // 👈 número, no objeto
-      notes: values.description || "",
-    };
+    form.reset();
 
-    console.log("Payload del movimiento:", JSON.stringify(movementPayload, null, 2));
-
-    const movimiento = await createMaterialMovement(movementPayload);
-
-    console.log("Movimiento creado:", movimiento);
-  } catch (error) {
-    console.error("Error en creación de material o movimiento:", error);
+    console.log("MATERIAL Y ACTIVITY CREADOS");
+  } catch (err) {
+    console.error("ERROR AL INTENTAR CREAR:", err);
   }
-};
-
+ };
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <Label htmlFor="name">Nombre del Material</Label>
-      <Input id="name" {...form.register('name')} placeholder="Nombre del material" />
+      <Input id="name" {...form.register('name')} placeholder="Nombre" />
 
       <Label htmlFor="quantity">Cantidad</Label>
       <Input id="quantity" type="number" {...form.register('quantity', { valueAsNumber: true })} placeholder="Cantidad" />
@@ -119,10 +113,10 @@ function AddMaterialForm() {
         ))}
       </select>
 
-      <Label htmlFor="department">Departamento</Label>
-      <select id="department" {...form.register('department')} className="border rounded p-2">
+      <Label htmlFor="departments">Departamento</Label>
+      <select id="departments" {...form.register('department_id')} className="border rounded p-2">
         <option value="">Selecciona un departamento</option>
-        {departments.map((dep) => (
+        {(departments ?? []).map((dep) => (
           <option key={dep.id} value={dep.id.toString()}>
             {dep.name}
           </option>
@@ -132,7 +126,7 @@ function AddMaterialForm() {
       <Label htmlFor="description">Descripción (opcional)</Label>
       <Input id="description" {...form.register('description')} placeholder="Descripción" />
 
-      <Button type="submit">Agregar Material</Button>
+      <Button type="submit" >Agregar Material</Button>
     </form>
   );
 }

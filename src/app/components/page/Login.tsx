@@ -1,13 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-import {
-  mapLoginErrors,
-  requestLogin,
-} from "@/app/services/api/authentication";
-import { setToken } from "@/app/services/api";
-import { useOnlineStatus } from "@/app/hooks/use-online-status";
-import { useAuthenticationStore } from "@/app/store/authentication";
+import {useState} from "react"
+import {supabase} from "@/app/lib/supabaseClient"
 
 import {
   Card,
@@ -23,67 +15,23 @@ import { Input } from "@/app/components/ui/input";
 export default function Login() {
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-  const [isDisabled, setIsDisabled] = useState(false);
-  const [isLoginDisabled, setIsLoginDisabled] = useState(false);
-  const [pendingLogin, setPendingLogin] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [loginError, setLoginError] = useState("");
-  const navigate = useNavigate();
+  const [error, setError] = useState<string |null>(null);
 
-  const token = useAuthenticationStore((state) => state.token);
-  const storeToken = useAuthenticationStore((state) => state.setToken);
-  const setCurrentUser = useAuthenticationStore((state) => state.setCurrentUser);
-  const isOnline = useOnlineStatus();
 
-  useEffect(() => {
-    setIsLoginDisabled(!(email && password) || !isOnline);
-  }, [email, password, isOnline]);
 
-  useEffect(() => {
-    if (token) {
-      navigate("/app");
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    if (error) {
+      setError(error.message)
+    } else {
+      console.log("Sesion Iniciada:", data);
+      window.location.href ="/app/home";
     }
-  }, [token, navigate]);
-
-  const getLogin = async () => {
-    setIsDisabled(true);
-    setPendingLogin(true);
-    setLoginError("");
-    setHasError(false);
-
-    const { data, error } = await requestLogin(email, password);
-    setPendingLogin(false);
-
-    if (error || !data) {
-      setLoginError(
-        mapLoginErrors[error?.data?.error?.name] || mapLoginErrors.default
-      );
-      setHasError(true);
-      setIsDisabled(false);
-      return;
-    }
-
-    const { jwt, user } = data;
-
-    setToken(jwt);
-    storeToken(jwt);
-    setCurrentUser(user);
-
-    setTimeout(() => {
-      console.log("Login successful, redirecting to dashboard...", {token: jwt, user});
-      navigate("/app/dashboard");
-    }, 0);
-    setIsDisabled(false);
   };
-
-  const getInputClasses = (hasError: boolean, isDisabled: boolean) =>
-    `mb-2 rounded-md border bg-white p-3 focus:outline-none focus:ring-2 dark:bg-gray-700 ${
-      isDisabled ? "opacity-50" : ""
-    } ${
-      hasError
-        ? "border-red-500 focus:ring-red-500"
-        : "border-gray-300 focus:ring-blue-500"
-    }`;
 
   return (
     <Card className="w-96 mx-auto mt-20 bg-gray shadow-lg p-6 justify-center">
@@ -95,19 +43,16 @@ export default function Login() {
       <CardContent>
         <form
           className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            getLogin();
-          }}
+          onSubmit={handleLogin}
         >
-          <fieldset disabled={isDisabled} className="contents">
+          <fieldset className="contents">
             <Input
               required
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={getInputClasses(hasError, isDisabled)}
+              
             />
 
             <Input
@@ -116,26 +61,16 @@ export default function Login() {
               placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={getInputClasses(hasError, isDisabled)}
+              
             />
-
-            {hasError && (
-              <span className="flex items-center rounded-md bg-red-200 p-1 text-sm text-red-500">
-                {loginError}
-              </span>
-            )}
 
             <Button
               type="submit"
-              disabled={isLoginDisabled || pendingLogin}
               className="w-full"
+              onSubmit={handleLogin}
             >
               Iniciar sesión
             </Button>
-
-            {pendingLogin && (
-              <p className="text-sm text-gray-500">Cargando...</p>
-            )}
           </fieldset>
         </form>
       </CardContent>

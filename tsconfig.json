@@ -1,25 +1,21 @@
 {
-	"compilerOptions": {
-		"target": "ESNext",
-		"module": "ESNext",
-		"moduleResolution": "node",
-		"resolveJsonModule": true,
-		"isolatedModules": true,
-		"types": ["astro/client"],
-		"baseUrl": ".",
-		"paths": {
-			"@/*": ["src/*"],
-			"@component/*": ["src/components/*"],
-			"@style/*": ["src/styles/*"],
-			"@util/*": ["utils/*"],
-			"@hook/*": ["src/app/hooks/*"],
-			"@img/*": ["src/assets/img/*"],
-			"@svg/*": ["src/assets/svg/*"],
-			"@icon/*": ["src/assets/svg/icon/*"],
-			
-			"@app/*": ["src/app/*"]
-		},
-		"jsx": "react-jsx",
-		"jsxImportSource": "react"
-	}
+  "extends": "astro/tsconfigs/strict",
+  "include": [
+    ".astro/types.d.ts",
+    "**/*"
+  ],
+  "exclude": [
+    "dist"
+  ],
+  "compilerOptions": {
+    
+    "types": ["vite/client"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [ "./src/*" ],
+      "@utils/*": ["utils/"]
+    }
+  }
 }

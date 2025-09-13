@@ -1,33 +1,36 @@
 ---
 import type { GetStaticPaths } from "astro";
-import "@style/global.css";
+import "src/styles/global.css"
 //component imports
-import App from "@/app/App"
-import { Layout } from "@/components";
-import LayoutApp from "@/components/Layout/LayoutApp.astro";
-import { undefined } from "astro:schema";
-import LayoutPage from "@/components/Layout/LayoutPage.astro";
-
-const title = "GDC Stock"
+import App from "../../app/App"
+import Layout from "../../components/Layout/Layout.astro";
+import LayoutApp from "../../components/Layout/LayoutApp.astro";
+import LayoutPage from "../../components/Layout/LayoutPage.astro";
+import { z } from "zod";
+const title = "GCSRf DEPO"
 
 export function getStaticPaths() {
     const departments = [
-        {documentId: "mb48g161ktc9ruajx2qpkd4b" }, //"Albañileria"
-        {documentId: "l3sm1plqcynn5lwa95r48yjj" }, // "Electricidad"
-        {documentId: "bwb94hplh4w1fsusgp5pmde9" }, // "Pintura"
-        {documentId: "z6ye62bhjig8ney4gm8uwwyx" }, //"Terminaciones"
-        {documentId: "r9vcw2mhuqo6iq9pp5ju8l7q" }, //"Herrería"
-        {documentId: "rfwnujforv9rciw4g9y6xqum" }, //"Pañol"
-        {documentId: "vinufw1sfzce9defkwqdnoip" }, //"Plomeria"
-        {documentId: "ocn3i76t0o9zbzztwu2j8zvs" } //"Finalización"
+        {id: "1" }, //"limpieza"
+      
+        {id: "3" }, // "plomeria"
+        {id: "4" }, //"pintura"
+        {id: "5" }, //"sonido"
+        {id: "6" }, //"terminaciones"
+        {id: "7" }, //"albañileria"
+        {id: "8" }, //"electricidad"
+        {id: "9" }, //"herreria"
+
+
     ];
     return [ { params: { route: undefined } },
     { params: { route: "login" } },
-    { params: { route: "dashboard" } },
+    { params: { route: "home" }},
+    { params: { route: "inventario" } },
     { params: { route: "addTool"} },
     { params: { route: "departments" } },
     ...departments.map((d) => ({
-      params: { route: `departments/${d.documentId}` },
+      params: { route: `departments/${d.id}` },
     })),
 ];
 }

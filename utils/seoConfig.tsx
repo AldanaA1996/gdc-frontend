@@ -9,7 +9,7 @@ const DESCRIPTION =
  * Defines the default SEO configuration for the website.
  */
 export const seoConfig = {
-	baseURL: "https://localhost:4321", // Change this to your production URL.
+	baseURL: "gcsrf.netlify.app ", // Change this to your production URL.
 	description: DESCRIPTION, // Change this to be your website's description.
 	type: "website",
 	image: {

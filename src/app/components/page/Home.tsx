@@ -38,7 +38,7 @@ export default function Home() {
             </li>
           </ol>
           <p className="mt-6">
-            Explora las diferentes secciones y familiarízate con las herramientas que SAE Depo te ofrece para hacer tu trabajo más fácil y organizado.
+            Explora las diferentes secciones y familiarízate con las herramientas que te ofrece para hacer tu trabajo más fácil y organizado.
           </p>
           
         </div>

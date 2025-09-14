@@ -52,7 +52,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>S.A.E Depo</SidebarGroupLabel>
+          <SidebarGroupLabel>GCSR F</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (

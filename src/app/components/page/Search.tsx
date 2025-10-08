@@ -2,26 +2,27 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/app/components/layout";
 import { supabase } from "@/app/lib/supabaseClient";
 import { Input } from "@/app/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/app/components/ui/dialog";
 import EditMaterialForm from "@/app/components/editMaterial";
 import EditToolForm from "@/app/components/editTool";
-import { SquarePen, Eye } from "lucide-react";
+import { SquarePen, Eye, Trash2, Package, Wrench, Download } from "lucide-react";
+import downloadInventoryCsv from "@/app/components/csvDownload";
 
-// Types aligned with existing pages
+// Types
 type Inventory = {
   id: number;
   name: string;
   quantity: number;
   unit: string | null;
+  min_quantity?: number | null;
   weight?: number | null;
   width?: number | null;
   height?: number | null;
   color?: string | null;
   manufactur?: string | null;
-  barcode?: string | null;
+  barcode?: number | null;
   hasQRcode?: boolean | null;
   description?: string | null;
 };
@@ -29,13 +30,17 @@ type Inventory = {
 type Tool = {
   id: number;
   name: string;
-  description?: string | null;
   quantity: number;
+  unit: string | null;
+  min_quantity?: number | null;
   manufactur?: string | null;
   barcode?: number | null;
-  hasQrCode?: boolean | null;
-  purchase_date?: string | null;
-  warrantyExpirationDate?: string | null;
+  description?: string | null;
+  status?: string | null;
+};
+
+type SearchItem = (Inventory | Tool) & {
+  itemType: 'material' | 'tool';
 };
 
 export default function SearchPage() {
@@ -43,34 +48,38 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true);
   const [materials, setMaterials] = useState<Inventory[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
-  const [activeTab, setActiveTab] = useState<"materials" | "tools">("materials");
-
-  // Infinite scroll state (progressively reveal items)
+  const [onlyLow, setOnlyLow] = useState<boolean>(false);
+  const [filterType, setFilterType] = useState<'all' | 'materials' | 'tools'>('all');
+  
+  // Infinite scroll state
   const PAGE_SIZE = 20;
-  const [matVisible, setMatVisible] = useState(PAGE_SIZE);
-  const [toolVisible, setToolVisible] = useState(PAGE_SIZE);
-  const matSentinelRef = useRef<HTMLDivElement | null>(null);
-  const toolSentinelRef = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // View/Edit dialog state
   const [openView, setOpenView] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<Inventory | null>(null);
-  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const [selectedItem, setSelectedItem] = useState<SearchItem | null>(null);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<
+    { type: "material" | "tool"; id: number; name: string } | null
+  >(null);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const [matRes, toolsRes] = await Promise.all([
+        const [matRes, toolRes] = await Promise.all([
           supabase.from("inventory").select("*"),
           supabase.from("tools").select("*"),
         ]);
+        
         if (!matRes.error && matRes.data) setMaterials(matRes.data as Inventory[]);
         else if (matRes.error) console.error("Error al cargar materiales:", matRes.error);
 
-        if (!toolsRes.error && toolsRes.data) setTools(toolsRes.data as Tool[]);
-        else if (toolsRes.error) console.error("Error al cargar herramientas:", toolsRes.error);
+        if (!toolRes.error && toolRes.data) setTools(toolRes.data as Tool[]);
+        else if (toolRes.error) console.error("Error al cargar herramientas:", toolRes.error);
       } finally {
         setLoading(false);
       }
@@ -78,86 +87,143 @@ export default function SearchPage() {
     load();
   }, []);
 
-  // Reset visible counts when search term changes
+  // Reset visible count when search term changes
   useEffect(() => {
-    setMatVisible(PAGE_SIZE);
-    setToolVisible(PAGE_SIZE);
-  }, [q]);
+    setVisible(PAGE_SIZE);
+  }, [q, filterType]);
 
-  // IntersectionObservers for infinite reveal
+  // IntersectionObserver for infinite reveal
   useEffect(() => {
-    const matObserver = new IntersectionObserver((entries) => {
+    const observer = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
         if (e.isIntersecting) {
-          setMatVisible((v) => v + PAGE_SIZE);
+          setVisible((v) => v + PAGE_SIZE);
         }
       });
     });
-    const node = matSentinelRef.current;
-    if (node) matObserver.observe(node);
+    const node = sentinelRef.current;
+    if (node) observer.observe(node);
     return () => {
-      if (node) matObserver.unobserve(node);
-      matObserver.disconnect();
+      if (node) observer.unobserve(node);
+      observer.disconnect();
     };
-  }, [matSentinelRef.current, PAGE_SIZE]);
+  }, [sentinelRef.current, PAGE_SIZE]);
 
-  useEffect(() => {
-    const toolObserver = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) {
-          setToolVisible((v) => v + PAGE_SIZE);
-        }
+  const handleDeleteMaterial = async (id: number) => {
+    const { error } = await supabase.from("inventory").delete().eq("id", id);
+    if (error) {
+      console.error("Error al eliminar el material:", error);
+    } else {
+      setMaterials((prev) => prev.filter((m) => m.id !== id));
+    }
+  };
+
+  const handleDeleteTool = async (id: number) => {
+    const { error } = await supabase.from("tools").delete().eq("id", id);
+    if (error) {
+      console.error("Error al eliminar la herramienta:", error);
+    } else {
+      setTools((prev) => prev.filter((t) => t.id !== id));
+    }
+  };
+
+  const requestDelete = (item: SearchItem) => {
+    setPendingDelete({ 
+      type: item.itemType, 
+      id: item.id as number, 
+      name: item.name 
+    });
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      if (pendingDelete.type === "material") {
+        await handleDeleteMaterial(pendingDelete.id);
+      } else {
+        await handleDeleteTool(pendingDelete.id);
+      }
+    } finally {
+      setConfirmOpen(false);
+      setPendingDelete(null);
+    }
+  };
+
+  // Combine materials and tools into one searchable list
+  const allItems = useMemo((): SearchItem[] => {
+    const matItems: SearchItem[] = materials.map(m => ({ ...m, itemType: 'material' as const }));
+    const toolItems: SearchItem[] = tools.map(t => ({ ...t, itemType: 'tool' as const }));
+    return [...matItems, ...toolItems];
+  }, [materials, tools]);
+
+  // Filter by search query
+  const filteredItems = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    let items = allItems;
+
+    // Filter by type
+    if (filterType === 'materials') {
+      items = items.filter(item => item.itemType === 'material');
+    } else if (filterType === 'tools') {
+      items = items.filter(item => item.itemType === 'tool');
+    }
+
+    // Filter by search query
+    if (s) {
+      items = items.filter((item) => {
+        const haystack = [
+          item.name,
+          item.unit ?? "",
+          item.manufactur ?? "",
+          item.barcode ?? "",
+          item.description ?? "",
+          (item as any).color ?? "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(s);
       });
-    });
-    const node = toolSentinelRef.current;
-    if (node) toolObserver.observe(node);
-    return () => {
-      if (node) toolObserver.unobserve(node);
-      toolObserver.disconnect();
-    };
-  }, [toolSentinelRef.current, PAGE_SIZE]);
+    }
 
-  const filteredMaterials = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return materials;
-    return materials.filter((m) => {
-      const haystack = [
-        m.name,
-        m.unit ?? "",
-        m.color ?? "",
-        m.manufactur ?? "",
-        m.barcode ?? "",
-        m.description ?? "",
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(s);
-    });
-  }, [q, materials]);
+    return items;
+  }, [q, allItems, filterType]);
 
-  const filteredTools = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return tools;
-    return tools.filter((t) => {
-      const barcodeStr = t.barcode != null ? String(t.barcode) : "";
-      const haystack = [
-        t.name,
-        t.description ?? "",
-        t.manufactur ?? "",
-        barcodeStr,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(s);
+  // Low-stock first sorting
+  const sortedForRender = useMemo(() => {
+    const isLow = (item: SearchItem) =>
+      typeof item.min_quantity === 'number' && 
+      item.min_quantity >= 0 && 
+      typeof item.quantity === 'number' && 
+      item.quantity <= item.min_quantity;
+    
+    const base = onlyLow ? filteredItems.filter(isLow) : filteredItems;
+    
+    return [...base].sort((a, b) => {
+      const la = isLow(a) ? 1 : 0;
+      const lb = isLow(b) ? 1 : 0;
+      if (lb !== la) return lb - la; // low stock first
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
     });
-  }, [q, tools]);
+  }, [filteredItems, onlyLow]);
 
-  // Normalize objects to match Edit forms' expected props (undefined instead of null, safe unit)
+  // Count low stock items
+  const lowStockCount = useMemo(() => {
+    return allItems.filter(item => 
+      typeof item.min_quantity === 'number' && 
+      item.min_quantity >= 0 && 
+      typeof item.quantity === 'number' && 
+      item.quantity <= item.min_quantity
+    ).length;
+  }, [allItems]);
+
+  // Normalize objects for edit forms
   const normalizeMaterial = (m: Inventory) => ({
     id: m.id,
     name: m.name,
     quantity: m.quantity,
     unit: (m.unit ?? 'Select') as any,
+    min_quantity: m.min_quantity ?? undefined,
     weight: m.weight ?? undefined,
     width: m.width ?? undefined,
     height: m.height ?? undefined,
@@ -172,139 +238,186 @@ export default function SearchPage() {
     id: t.id,
     name: t.name,
     quantity: t.quantity,
+    unit: (t.unit ?? 'Select') as any,
+    min_quantity: t.min_quantity ?? undefined,
     manufactur: t.manufactur ?? undefined,
     barcode: t.barcode ?? undefined,
-    hasQrCode: t.hasQrCode ?? undefined,
     description: t.description ?? undefined,
-    purchase_date: t.purchase_date ?? undefined,
-    warrantyExpirationDate: t.warrantyExpirationDate ?? undefined,
-                  });
+    status: t.status ?? undefined,
+  });
 
   return (
     <Layout>
       <div className="p-0 md:p-6 max-w-5xl mx-auto w-full">
         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b px-6 py-4 md:px-0 py-4">
-          <h1 className="text-xl md:text-2xl font-bold mb-3">Buscar en Inventario y Herramientas</h1>
-          <Input
-            placeholder="Buscar por nombre, fabricante, código, etc."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+          <h1 className="text-xl md:text-2xl font-bold mb-3">Buscar en Inventario</h1>
+          
+          <div className="flex flex-col gap-3">
+            <div className="flex-1">
+              <Input
+                placeholder="Buscar por nombre, fabricante, código, etc."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              {/* Filter buttons */}
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={filterType === 'all' ? 'default' : 'outline'}
+                  onClick={() => setFilterType('all')}
+                >
+                  Todos ({allItems.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={filterType === 'materials' ? 'default' : 'outline'}
+                  onClick={() => setFilterType('materials')}
+                >
+                  <Package className="h-4 w-4 mr-1" />
+                 ({materials.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={filterType === 'tools' ? 'default' : 'outline'}
+                  onClick={() => setFilterType('tools')}
+                >
+                  <Wrench className="h-4 w-4 mr-1" />
+                  ({tools.length})
+                </Button>
+             
+               <Button variant="outline" size="sm" onClick={downloadInventoryCsv}>
+                  <Download className="h-4 w-4 mr-1" />
+                  CSV
+                </Button>
+ </div>
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-2 text-sm select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={onlyLow} 
+                    onChange={(e) => setOnlyLow(e.target.checked)} 
+                  />
+                  <span>Solo bajo stock</span>
+                  <span className="text-xs text-gray-500">({lowStockCount})</span>
+                </label>
+                
+               
+              </div>
+            </div>
+          </div>
         </div>
 
         {loading ? (
-          <p className="text-center">Cargando...</p>
+          <p className="text-center mt-8">Cargando...</p>
         ) : (
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full px-4 py-4 md:px-0">
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="materials">Materiales</TabsTrigger>
-              <TabsTrigger value="tools">Herramientas</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="materials" className="mt-4 space-y-3">
-              {filteredMaterials.length === 0 ? (
-                <p className="text-center text-gray-500">No se encontraron materiales.</p>
-              ) : (
-                filteredMaterials.slice(0, matVisible).map((m, idx, arr) => (
-                  <Card key={m.id} className="p-4 shadow-sm border">
+          <div className="w-full px-4 py-4 md:px-0 mt-4 space-y-3">
+            {filteredItems.length === 0 ? (
+              <p className="text-center text-gray-500">
+                No se encontraron {filterType === 'all' ? 'resultados' : filterType === 'materials' ? 'materiales' : 'herramientas'}.
+              </p>
+            ) : (
+              sortedForRender.slice(0, visible).map((item) => {
+                const low = typeof item.min_quantity === 'number' && 
+                            item.min_quantity >= 0 && 
+                            typeof item.quantity === 'number' && 
+                            item.quantity <= item.min_quantity;
+                
+                const isMaterial = item.itemType === 'material';
+                
+                return (
+                  <Card
+                    key={`${item.itemType}-${item.id}`}
+                    className={`p-4 shadow-sm border ${low ? 'border-red-400 bg-red-50/60' : ''}`}
+                  >
                     <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <h2 className="text-lg font-semibold">{m.name}</h2>
-                        <p className="text-sm text-gray-500">{m.quantity} {m.unit}</p>
-                        {m.manufactur && (
-                          <p className="text-sm text-gray-500">Fabricante: {m.manufactur}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          
+                          <h2 className={`text-lg font-semibold ${low ? 'text-red-700' : ''}`}>
+                            {item.name}
+                          </h2>
+                          
+                        </div>
+                        
+                        <p className={`text-sm ${low ? 'text-red-700 font-medium' : 'text-gray-500'}`}>
+                          {item.quantity} {item.unit}
+                          {low && typeof item.min_quantity === 'number' ? ` · mínimo: ${item.min_quantity}` : ''}
+                        </p>
+                        
+                        {item.manufactur && (
+                          <p className="text-sm text-gray-500">Fabricante: {item.manufactur}</p>
                         )}
-                        {m.barcode && (
-                          <p className="text-sm text-gray-500">Código: {m.barcode}</p>
+                        {item.barcode && (
+                          <p className="text-sm text-gray-500">Código: {item.barcode}</p>
                         )}
-                        {m.description && (
-                          <p className="text-sm text-gray-500">{m.description}</p>
+                        {item.description && (
+                          <p className="text-sm text-gray-500">{item.description}</p>
                         )}
                       </div>
+                      
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => { setSelectedMaterial(m); setOpenView(true); }}>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => { 
+                            setSelectedItem(item); 
+                            setOpenView(true); 
+                          }}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="default" onClick={() => { setSelectedMaterial(m); setOpenEdit(true); }}>
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          onClick={() => { 
+                            setSelectedItem(item); 
+                            setOpenEdit(true); 
+                          }}
+                        >
                           <SquarePen className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          onClick={() => requestDelete(item)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   </Card>
-                ))
-              )}
-              {/* Sentinel for materials */}
-              {filteredMaterials.length > matVisible && <div ref={matSentinelRef} />}
-            </TabsContent>
-
-            <TabsContent value="tools" className="mt-4 space-y-3">
-              {filteredTools.length === 0 ? (
-                <p className="text-center text-gray-500">No se encontraron herramientas.</p>
-              ) : (
-                filteredTools.slice(0, toolVisible).map((t) => (
-                  <Card key={t.id} className="p-4 shadow-sm border">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <h2 className="text-lg font-semibold">{t.name}</h2>
-                        <p className="text-sm text-gray-500">{t.quantity} disponibles</p>
-                        {t.manufactur && (
-                          <p className="text-sm text-gray-500">Fabricante: {t.manufactur}</p>
-                        )}
-                        {t.barcode != null && (
-                          <p className="text-sm text-gray-500">Código: {t.barcode}</p>
-                        )}
-                        {t.purchase_date && (
-                          <p className="text-sm text-gray-500">Compra: {t.purchase_date}</p>
-                        )}
-                        {t.warrantyExpirationDate && (
-                          <p className="text-sm text-gray-500">Garantía hasta: {t.warrantyExpirationDate}</p>
-                        )}
-                        {t.description && (
-                          <p className="text-sm text-gray-500">{t.description}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => { setSelectedTool(t); setOpenView(true); }}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="default" onClick={() => { setSelectedTool(t); setOpenEdit(true); }}>
-                          <SquarePen className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))
-              )}
-              {/* Sentinel for tools */}
-              {filteredTools.length > toolVisible && <div ref={toolSentinelRef} />}
-            </TabsContent>
-          </Tabs>
+                );
+              })
+            )}
+            
+            {/* Sentinel for infinite scroll */}
+            {filteredItems.length > visible && <div ref={sentinelRef} />}
+          </div>
         )}
+
         {/* View Dialog */}
         <Dialog open={openView} onOpenChange={setOpenView}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Detalles</DialogTitle>
+              <DialogTitle>
+                Detalles - {selectedItem?.itemType === 'material' ? 'Material' : 'Herramienta'}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-2">
-              {selectedMaterial && (
+              {selectedItem && (
                 <div className="text-sm">
-                  <p><strong>Nombre:</strong> {selectedMaterial.name}</p>
-                  <p><strong>Cantidad:</strong> {selectedMaterial.quantity} {selectedMaterial.unit}</p>
-                  {selectedMaterial.manufactur && <p><strong>Fabricante:</strong> {selectedMaterial.manufactur}</p>}
-                  {selectedMaterial.barcode && <p><strong>Código:</strong> {selectedMaterial.barcode}</p>}
-                  {selectedMaterial.description && <p>{selectedMaterial.description}</p>}
-                </div>
-              )}
-              {selectedTool && (
-                <div className="text-sm">
-                  <p><strong>Nombre:</strong> {selectedTool.name}</p>
-                  <p><strong>Disponibles:</strong> {selectedTool.quantity}</p>
-                  {selectedTool.manufactur && <p><strong>Fabricante:</strong> {selectedTool.manufactur}</p>}
-                  {selectedTool.barcode != null && <p><strong>Código:</strong> {selectedTool.barcode}</p>}
-                  {selectedTool.purchase_date && <p><strong>Compra:</strong> {selectedTool.purchase_date}</p>}
-                  {selectedTool.warrantyExpirationDate && <p><strong>Garantía:</strong> {selectedTool.warrantyExpirationDate}</p>}
-                  {selectedTool.description && <p>{selectedTool.description}</p>}
+                  <p><strong>Nombre:</strong> {selectedItem.name}</p>
+                  <p><strong>Cantidad:</strong> {selectedItem.quantity} {selectedItem.unit}</p>
+                  {selectedItem.min_quantity && <p><strong>Mínimo:</strong> {selectedItem.min_quantity}</p>}
+                  {selectedItem.manufactur && <p><strong>Fabricante:</strong> {selectedItem.manufactur}</p>}
+                  {selectedItem.barcode && <p><strong>Código:</strong> {selectedItem.barcode}</p>}
+                  {selectedItem.description && <p><strong>Descripción:</strong> {selectedItem.description}</p>}
+                  {selectedItem.itemType === 'tool' && (selectedItem as Tool).status && (
+                    <p><strong>Estado:</strong> {(selectedItem as Tool).status}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -312,18 +425,66 @@ export default function SearchPage() {
         </Dialog>
 
         {/* Edit Dialog */}
-        <Dialog open={openEdit} onOpenChange={(o) => { setOpenEdit(o); if (!o) { setSelectedMaterial(null); setSelectedTool(null); } }}>
+        <Dialog open={openEdit} onOpenChange={(o) => { 
+          setOpenEdit(o); 
+          if (!o) setSelectedItem(null); 
+        }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Editar</DialogTitle>
+              <DialogTitle>
+                Editar {selectedItem?.itemType === 'material' ? 'Material' : 'Herramienta'}
+              </DialogTitle>
             </DialogHeader>
             <div className="p-1 max-h-[70vh] overflow-y-auto">
-              {selectedMaterial && (
-                <EditMaterialForm material={normalizeMaterial(selectedMaterial)} onClose={() => { setOpenEdit(false); setSelectedMaterial(null); }} />
+              {selectedItem && selectedItem.itemType === 'material' && (
+                <EditMaterialForm 
+                  material={normalizeMaterial(selectedItem as Inventory)} 
+                  onClose={() => { 
+                    setOpenEdit(false); 
+                    setSelectedItem(null); 
+                  }} 
+                />
               )}
-              {selectedTool && (
-                <EditToolForm tools={normalizeTool(selectedTool)} onClose={() => { setOpenEdit(false); setSelectedTool(null); }} />
+              {selectedItem && selectedItem.itemType === 'tool' && (
+                <EditToolForm 
+                  tools={normalizeTool(selectedItem as Tool)} 
+                  onClose={() => { 
+                    setOpenEdit(false); 
+                    setSelectedItem(null); 
+                  }} 
+                />
               )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar eliminación</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p>
+                ¿Estás seguro de eliminar {pendingDelete?.type === "material" ? "el material" : "la herramienta"}
+                {" "}
+                <span className="font-semibold">{pendingDelete?.name}</span>?
+                Esta acción no se puede deshacer.
+              </p>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => { 
+                    setConfirmOpen(false); 
+                    setPendingDelete(null); 
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={confirmDelete}>
+                  Eliminar
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

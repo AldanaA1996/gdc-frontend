@@ -13,7 +13,8 @@ import { useParams as useReactRouterParams } from "react-router-dom";
 import { supabase } from "@/app/lib/supabaseClient";
 import { Movements } from "./components/page/Movements";
 import SearchPage from "./components/page/Search";
-import { Info } from "lucide-react";
+import { Info } from "./components/page/Info";
+import Shop from "./components/page/Shop";
 
 
 export default function App() {
@@ -51,6 +52,14 @@ export default function App() {
                     element={
                         <ProtectedRoute>
                             <Pañol/>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/app/shop"
+                    element={
+                        <ProtectedRoute>
+                            <Shop/>
                         </ProtectedRoute>
                     }
                 />

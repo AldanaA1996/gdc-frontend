@@ -18,7 +18,7 @@ export const useSearch = () => {
         .from("tools")
         .select("*")
         .ilike("name", `%${searchTerm}%`)
-        .eq("status", "inUse")
+        .eq("inUse", true)
         .limit(10);
 
       if (!error) setTools(data || []);

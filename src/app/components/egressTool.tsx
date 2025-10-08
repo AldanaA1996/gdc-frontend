@@ -10,7 +10,7 @@ import { Label } from "@/app/components/ui/label";
 
 import { useAuthenticationStore } from "../store/authentication";
 import { supabase } from "../lib/supabaseClient";
-import { useSearch } from "../hooks/use-tool-search"; // 🔎 Debes crear este hook (similar a use-material-search)
+import { useSearch } from "../hooks/use-tool-search";
 
 const schema = z.object({
   toolId: z.string().min(1, "Debes seleccionar una herramienta."),
@@ -19,11 +19,15 @@ const schema = z.object({
 export type Tool = {
   id: string;
   name: string;
-  status: string; // disponible, en uso, etc.
+  inUse: boolean;
   condition: string;
 };
 
-function EgressTool() {
+interface EgressToolProps {
+  onToolUpdate?: () => void; // ✅ nueva prop para actualizar el contador
+}
+
+function EgressTool({ onToolUpdate }: EgressToolProps) {
   const { tools, isLoading, setSearchTerm, searchTerm, setTools } = useSearch();
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +43,6 @@ function EgressTool() {
 
   const getDbUserId = async (): Promise<number | null> => {
     if (!user?.id) return null;
-
     const { data: dbUser, error } = await supabase
       .from("user")
       .select("id")
@@ -51,95 +54,41 @@ function EgressTool() {
       toast.error("Error buscando usuario en la base");
       return null;
     }
-
     if (!dbUser) {
       toast.error("El usuario logueado no está vinculado en la tabla user");
       return null;
     }
-
     return dbUser.id;
   };
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
-    console.log("onSubmit called with values:", values);
     setError(null);
-
     if (!selectedTool) {
       setError("Por favor, selecciona una herramienta.");
       toast.error("Por favor, selecciona una herramienta de la lista.");
       return;
     }
 
-    if (selectedTool.status === "inUse") {
-      setError("La herramienta ya está en uso.");
+    if (selectedTool.inUse) {
+      setError("La herramienta ya está prestada.");
       toast.error("Esta herramienta ya está prestada.");
       return;
     }
 
     try {
-      // 1️⃣ Actualizar el estado de la herramienta
+      const userCreatorId = await getDbUserId();
+      if (!userCreatorId) throw new Error("No se pudo obtener el usuario creador");
+
+      // 1️⃣ Actualizar estado de la herramienta
       const { error: updateError } = await supabase
         .from("tools")
-        .update({ status: "inUse" })
+        .update({ inUse: true })
         .eq("id", selectedTool.id);
-
       if (updateError) throw updateError;
 
-      // 2️⃣ Crear actividades
-      const now = new Date();
-      const horaActual = now.toLocaleTimeString("es-AR", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
-      const fechaActual =
-        now
-          .toLocaleDateString("es-AR", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          })
-          .split("/")
-          .reverse()
-          .join("-") +
-        "T" +
-        now.toLocaleTimeString("es-AR", {
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        });
-
-      const createdBy = user?.id ?? null;
-      const userCreatorId = await getDbUserId();
-
-      const activities = [
-        {
-          tool: selectedTool.id,
-          activity_type: "exit",
-          user_creator: userCreatorId,
-          created_by: createdBy,
-          created_at: horaActual,
-          created_date: fechaActual,
-        },
-        {
-          tool: selectedTool.id,
-          activity_type: "inUse",
-          user_creator: userCreatorId,
-          created_by: createdBy,
-          created_at: horaActual,
-          created_date: fechaActual,
-        },
-      ];
-
-      const { error: activityError } = await supabase
-        .from("activity")
-        .insert(activities);
-
-      if (activityError) throw activityError;
-
-      // 3️⃣ Resetear formulario
+      // 2️⃣ Crear registro en activity
+      const now = new Date(); const horaActual = now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); const fechaActual = now.toLocaleDateString("es-AR", { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-') + 'T' + now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); const { error: activityError } = await supabase.from("activity").insert([ { tool: selectedTool.id, activity_type: 'return', user_creator: userCreatorId, created_by: user?.id ?? null, created_at: horaActual, created_date: fechaActual, }, ]); if (activityError) throw activityError;
+      // 3️⃣ Resetear estado y formulario
       form.reset();
       setSearchTerm("");
       setSelectedTool(null);
@@ -147,6 +96,9 @@ function EgressTool() {
       toast.success("Herramienta prestada correctamente", {
         description: `Se registró la salida de ${selectedTool.name} como 'en uso'.`,
       });
+
+      // 4️⃣ Actualizar contador en el componente padre
+      if (onToolUpdate) onToolUpdate();
     } catch (err: any) {
       console.error("Error al prestar la herramienta:", err);
       setError("Ocurrió un error al procesar el préstamo. Intenta de nuevo.");
@@ -155,6 +107,7 @@ function EgressTool() {
   };
 
   const handleSelectTool = (tool: Tool) => {
+    if (tool.inUse) return; // prevenir selección de herramientas en uso
     setSelectedTool(tool);
     form.setValue("toolId", tool.id, { shouldValidate: true });
     setSearchTerm(tool.name);
@@ -189,21 +142,26 @@ function EgressTool() {
               {tools.map((tool: Tool) => (
                 <li
                   key={tool.id}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  className={`px-4 py-2 cursor-pointer ${
+                    tool.inUse
+                      ? "text-gray-400 bg-gray-50 cursor-not-allowed"
+                      : "hover:bg-gray-100"
+                  }`}
                   onClick={() => handleSelectTool(tool)}
                 >
-                  {tool.name} ({tool.status === "inUse" ? "En uso" : "Disponible"})
+                  {tool.name} {tool.inUse ? "(En uso)" : "(Disponible)"}
                 </li>
               ))}
             </ul>
           )}
+
           {isLoading && <p className="text-sm text-gray-500">Buscando...</p>}
         </div>
 
         {selectedTool && (
           <p
             className={`text-sm p-2 rounded-md border ${
-              selectedTool.status === "inUse"
+              selectedTool.inUse
                 ? "bg-red-50 border-red-200"
                 : "bg-blue-50 border-blue-200"
             }`}
@@ -211,7 +169,7 @@ function EgressTool() {
             <span className="font-semibold">Seleccionada:</span> {selectedTool.name}
             <br />
             <span className="font-semibold">Estado:</span>{" "}
-            {selectedTool.status === "inUse" ? "En uso" : "Disponible"}
+            {selectedTool.inUse ? "En uso" : "Disponible"}
           </p>
         )}
 
@@ -221,7 +179,7 @@ function EgressTool() {
 
         <Button
           type="submit"
-          disabled={!selectedTool || form.formState.isSubmitting}
+          disabled={!selectedTool || selectedTool.inUse || form.formState.isSubmitting}
         >
           {form.formState.isSubmitting ? "Procesando..." : "Prestar Herramienta"}
         </Button>

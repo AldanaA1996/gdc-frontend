@@ -27,6 +27,7 @@ export default function MovementsView({ tableName = "activity" }: MovementsViewP
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inventoryById, setInventoryById] = useState<Record<string, { name?: string }>>({});
+  const [toolById, setToolById] = useState<Record<string, { name?: string }>>({});
   // Filters
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
@@ -52,9 +53,12 @@ export default function MovementsView({ tableName = "activity" }: MovementsViewP
         const rows = (data as MovementRecord[]) || [];
         setData(rows);
 
+        const toolIdSet = new Set<number>();
         const invIdSet = new Set<number>();
 
         for (const r of rows) {
+          const toolId = (r as any).tool as number | undefined;
+          if (typeof toolId === "number") toolIdSet.add(toolId);
           const invId = (r as any).material as number | undefined;
           if (typeof invId === "number") invIdSet.add(invId);
         }
@@ -63,6 +67,20 @@ export default function MovementsView({ tableName = "activity" }: MovementsViewP
         for (const r of rows) {
           const userId = (r as any).user_creator as string | undefined;
           if (userId) userIdSet.add(userId);
+        }
+
+        if (toolIdSet.size) {
+          const { data: toolData } = await supabase
+            .from("tools")
+            .select("id, name")
+            .in("id", Array.from(toolIdSet));
+          const mapTool: Record<string, { name?: string }> = {};
+          (toolData || []).forEach((t: any) => {
+            mapTool[String(t.id)] = { name: t.name };
+          });
+          setToolById(mapTool);
+        } else {
+          setToolById({});
         }
 
         if (invIdSet.size) {
@@ -106,7 +124,6 @@ export default function MovementsView({ tableName = "activity" }: MovementsViewP
     const getWhen = (m: MovementRecord): Date | null => {
       const cd = m.created_date;
       if (cd) {
-        // Parse como fecha local, no UTC
         const dateStr = String(cd).replace('T', ' ').replace('Z', '').trim();
         const parts = dateStr.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
         if (parts) {
@@ -237,10 +254,7 @@ export default function MovementsView({ tableName = "activity" }: MovementsViewP
           const ca = m.created_at;
           
           if (cd) {
-            // Parse como fecha local, no UTC
             const dateStr = String(cd).replace('Z', '').trim();
-            
-            // Intenta parsear formato: YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss
             const parts = dateStr.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
             if (parts) {
               const [, year, month, day, hour, min, sec] = parts;
@@ -250,7 +264,6 @@ export default function MovementsView({ tableName = "activity" }: MovementsViewP
               }
             }
             
-            // Fallback: formato más flexible (puede que falte segundos)
             const match2 = dateStr.match(/(\d{4})-(\d{2})-(\d{2})[T\s]?(\d{2}):(\d{2}):?(\d{2})?/);
             if (match2) {
               const [, year, month, day, hour, min, sec] = match2;
@@ -260,19 +273,45 @@ export default function MovementsView({ tableName = "activity" }: MovementsViewP
               }
             }
             
-            // Si nada funciona, mostrar el valor raw de created_date con la hora
             return cd + (ca ? ` (${ca})` : "");
           }
           
-          // Si solo hay hora, mostrarla
           return ca ? `${ca}` : "";
         })();
 
-        const material = (() => {
+      
+        const materialName = (() => {
           const invId = (m as any).material as number | string | undefined;
           if (invId == null) return undefined;
           const rec = inventoryById[String(invId)];
           return rec?.name;
+        })();
+
+        const toolName = (() => {
+          const toolId = (m as any).tool as number | string | undefined;
+          if (toolId == null) return undefined;
+          const rec = toolById[String(toolId)];
+          return rec?.name;
+        })();
+
+        
+        const itemName = materialName || toolName || "Movimiento";
+        
+
+       
+        const activityTypeDisplay = (() => {
+          const mt = String(movementType || "").toLowerCase();
+          
+          const types: Record<string, { label: string; color: string }> = {
+            'borrow': { label: 'Préstamo', color: 'bg-orange-100 text-orange-700' },
+            'return': { label: 'Devolución', color: 'bg-green-100 text-green-700' },
+            'entry': { label: 'Entrada', color: 'bg-blue-100 text-blue-700' },
+            'exit': { label: 'Salida', color: 'bg-red-100 text-red-700' },
+            'new': { label: 'Nuevo', color: 'bg-purple-100 text-purple-700' },
+            'inuse': { label: 'En uso', color: 'bg-yellow-100 text-yellow-700' },
+          };
+          
+          return types[mt] || { label: movementType, color: 'bg-gray-100 text-gray-700' };
         })();
 
         const user = (m as any).user?.name as string | undefined;
@@ -282,14 +321,31 @@ export default function MovementsView({ tableName = "activity" }: MovementsViewP
         const checked = realId != null ? selectedIds.has(String(realId)) : false;
 
         const qtyVal = m.quantity;
+        
+        // 🔧 CORREGIDO: Los chips de cantidad funcionan igual para materials y tools
         const qtyChip = (() => {
           if (qtyVal == null) return null;
           const mt = String(movementType || "").toLowerCase();
+        
+          const isBorrow = mt === "borrow";
+          const isReturn = mt === "return";
           const isNew = mt === "new";
           const isEntry = mt === "entry";
           const isExit = mt === "exit";
-          const sign = isNew ? "NEW +" : isEntry ? "+" : isExit ? "-" : "";
-          const color = isNew ? "bg-blue-50 text-blue-700" : isEntry ? "bg-green-50 text-green-700" : isExit ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700";
+          const isInUse = mt === "inuse";
+        
+          // Determinar signo
+          let sign = "";
+          if (isBorrow || isExit || isInUse) sign = "-";
+          else if (isReturn || isEntry) sign = "+";
+          else if (isNew) sign = "+";
+        
+          // Determinar color
+          let color = "bg-blue-50 text-blue-700";
+          if (isBorrow || isExit || isInUse) color = "bg-red-50 text-red-700";
+          if (isReturn || isEntry) color = "bg-green-50 text-green-700";
+          if (isNew) color = "bg-blue-50 text-blue-700";
+        
           return (
             <span className={`text-xs rounded px-2 py-0.5 ${color}`}>
               {sign}{qtyVal}
@@ -302,9 +358,17 @@ export default function MovementsView({ tableName = "activity" }: MovementsViewP
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-[200px]">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">
-                    {material || "Movimiento"}
-                  </span>
+                  <span className="font-semibold">{itemName}</span>
+                  {/* {itemType && (
+                    <span className="text-xs bg-gray-100 text-gray-600 rounded px-2 py-0.5">
+                      {itemType}
+                    </span>
+                  )} */}
+                  {activityTypeDisplay.label && (
+                    <span className={`text-xs rounded px-2 py-0.5 font-medium ${activityTypeDisplay.color}`}>
+                      {activityTypeDisplay.label}
+                    </span>
+                  )}
                   {qtyChip}
                 </div>
                 <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-3">
@@ -367,7 +431,6 @@ function formatDateTime(value?: string) {
   try {
     const d = new Date(value);
     if (isNaN(d.getTime())) return value;
-    // Formato: DD/MM/YYYY HH:mm:ss (24 horas)
     return d.toLocaleString("es-AR", { 
       year: 'numeric', 
       month: '2-digit', 
@@ -383,7 +446,6 @@ function formatDateTime(value?: string) {
 }
 
 function formatDateTimeLocal(d: Date) {
-  // Formato: DD/MM/YYYY HH:mm:ss (24 horas) para objeto Date ya creado como local
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();

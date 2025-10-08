@@ -10,7 +10,7 @@ import { Label } from "@/app/components/ui/label";
 
 import { useAuthenticationStore } from "../store/authentication";
 import { supabase } from "../lib/supabaseClient";
-import { useSearch } from "../hooks/use-tool-return-search"; // 👈 Hook específico para herramientas en uso
+import { useSearch } from "../hooks/use-tool-return-search";
 
 const schema = z.object({
   toolId: z.string().min(1, "Debes seleccionar una herramienta."),
@@ -19,11 +19,15 @@ const schema = z.object({
 export type Tool = {
   id: string;
   name: string;
-  status: string;
+  inUse: boolean;
   condition: string;
 };
 
-function ReturnTool() {
+interface ReturnToolProps {
+  onToolUpdate?: () => void; // ✅ nueva prop para actualizar contador
+}
+
+function ReturnTool({ onToolUpdate }: ReturnToolProps) {
   const { tools, isLoading, setSearchTerm, searchTerm, setTools } = useSearch();
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,12 +55,10 @@ function ReturnTool() {
       toast.error("Error buscando usuario en la base");
       return null;
     }
-
     if (!dbUser) {
       toast.error("El usuario logueado no está vinculado en la tabla user");
       return null;
     }
-
     return dbUser.id;
   };
 
@@ -64,69 +66,32 @@ function ReturnTool() {
     setError(null);
 
     if (!selectedTool) {
-      setError("Por favor, selecciona una herramienta de la lista.");
-      toast.error("Selecciona una herramienta en uso para devolver.");
+      setError("Por favor, selecciona una herramienta.");
+      toast.error("Selecciona una herramienta para devolver.");
       return;
     }
 
-    if (selectedTool.status !== "inUse") {
-      setError("Esta herramienta no está marcada como en uso.");
-      toast.error("La herramienta no está prestada actualmente.");
+    if (!selectedTool.inUse) {
+      setError("La herramienta no está prestada actualmente.");
+      toast.error("Esta herramienta no está marcada como 'en uso'.");
       return;
     }
 
     try {
-      // 1️⃣ Actualizar herramienta a "available"
+      const userCreatorId = await getDbUserId();
+      if (!userCreatorId) throw new Error("No se pudo obtener el usuario creador");
+
+      // 1️⃣ Actualizar herramienta como disponible
       const { error: updateError } = await supabase
         .from("tools")
-        .update({ status: "available" })
+        .update({ inUse: false })
         .eq("id", selectedTool.id);
-
       if (updateError) throw updateError;
 
-      // 2️⃣ Registrar actividad "return"
-      const now = new Date();
-      const horaActual = now.toLocaleTimeString("es-AR", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
-      const fechaActual =
-        now
-          .toLocaleDateString("es-AR", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          })
-          .split("/")
-          .reverse()
-          .join("-") +
-        "T" +
-        now.toLocaleTimeString("es-AR", {
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        });
+      // 2️⃣ Registrar devolución en activity
+      const now = new Date(); const horaActual = now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); const fechaActual = now.toLocaleDateString("es-AR", { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-') + 'T' + now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); const { error: activityError } = await supabase.from("activity").insert([ { tool: selectedTool.id, activity_type: 'return', user_creator: userCreatorId, created_by: user?.id ?? null, created_at: horaActual, created_date: fechaActual, }, ]); if (activityError) throw activityError;
 
-      const createdBy = user?.id ?? null;
-      const userCreatorId = await getDbUserId();
-
-      const { error: activityError } = await supabase.from("activity").insert([
-        {
-          tool: selectedTool.id,
-          activity_type: "return",
-          user_creator: userCreatorId,
-          created_by: createdBy,
-          created_at: horaActual,
-          created_date: fechaActual,
-        },
-      ]);
-
-      if (activityError) throw activityError;
-
-      // 3️⃣ Reset
+      // 3️⃣ Resetear formulario y estado
       form.reset();
       setSearchTerm("");
       setSelectedTool(null);
@@ -134,6 +99,9 @@ function ReturnTool() {
       toast.success("Herramienta devuelta correctamente", {
         description: `Se registró la devolución de ${selectedTool.name}.`,
       });
+
+      // 4️⃣ Actualizar contador en componente padre
+      if (onToolUpdate) onToolUpdate();
     } catch (err: any) {
       console.error("Error al devolver la herramienta:", err);
       setError("Ocurrió un error al registrar la devolución.");
@@ -142,6 +110,7 @@ function ReturnTool() {
   };
 
   const handleSelectTool = (tool: Tool) => {
+    if (!tool.inUse) return; // prevenir selección de herramientas no prestadas
     setSelectedTool(tool);
     form.setValue("toolId", tool.id, { shouldValidate: true });
     setSearchTerm(tool.name);
@@ -150,7 +119,8 @@ function ReturnTool() {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(form.getValues());
+    const formData = form.getValues();
+    onSubmit(formData);
   };
 
   return (
@@ -166,7 +136,7 @@ function ReturnTool() {
               if (selectedTool) setSelectedTool(null);
               form.setValue("toolId", "", { shouldValidate: true });
             }}
-            placeholder="Buscar herramienta prestada..."
+            placeholder="Escribe para buscar herramienta prestada..."
             autoComplete="off"
           />
 
@@ -175,10 +145,14 @@ function ReturnTool() {
               {tools.map((tool: Tool) => (
                 <li
                   key={tool.id}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  className={`px-4 py-2 cursor-pointer ${
+                    !tool.inUse
+                      ? "text-gray-400 bg-gray-50 cursor-not-allowed"
+                      : "hover:bg-gray-100"
+                  }`}
                   onClick={() => handleSelectTool(tool)}
                 >
-                  {tool.name} ({tool.status})
+                  {tool.name} {tool.inUse ? "(En uso)" : "(Disponible)"}
                 </li>
               ))}
             </ul>
@@ -187,10 +161,17 @@ function ReturnTool() {
         </div>
 
         {selectedTool && (
-          <p className="text-sm p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p
+            className={`text-sm p-2 rounded-md border ${
+              selectedTool.inUse
+                ? "bg-yellow-50 border-yellow-200"
+                : "bg-green-50 border-green-200"
+            }`}
+          >
             <span className="font-semibold">Seleccionada:</span> {selectedTool.name}
             <br />
-            <span className="font-semibold">Estado actual:</span> {selectedTool.status}
+            <span className="font-semibold">Estado:</span>{" "}
+            {selectedTool.inUse ? "En uso" : "Disponible"}
           </p>
         )}
 
@@ -200,7 +181,7 @@ function ReturnTool() {
 
         <Button
           type="submit"
-          disabled={!selectedTool || form.formState.isSubmitting}
+          disabled={!selectedTool || !selectedTool.inUse || form.formState.isSubmitting}
         >
           {form.formState.isSubmitting ? "Procesando..." : "Devolver Herramienta"}
         </Button>

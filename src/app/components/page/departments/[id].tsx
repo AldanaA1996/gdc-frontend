@@ -21,7 +21,7 @@ type Inventory = {
   height?: number;
   color?: string;
   manufactur?: string;
-  barcode?: string;
+  barcode?: number;
   description?: string;
   department_id?: number;
 };

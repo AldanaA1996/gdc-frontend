@@ -19,7 +19,7 @@ const schema = z.object({
   height: z.number().nullable().optional(),
   color: z.string().nullable().optional(),
   manufactur: z.string().nullable().optional(),
-  barcode: z.string().nullable().optional(),
+  barcode: z.number().nullable().optional(),
   description: z.string().nullable().optional(),
   unit: z.enum(Medidas),
   min_quantity: z.number().nullable().optional(),
@@ -37,7 +37,7 @@ interface EditMaterialFormProps {
     height?: number;
     color?: string;
     manufactur?: string;
-    barcode?: string;
+    barcode?: number;
     min_quantity?: number;
     max_quantity?: number;
     description?: string;

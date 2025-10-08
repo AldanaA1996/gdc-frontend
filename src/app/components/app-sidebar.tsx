@@ -1,4 +1,4 @@
-import { ArrowUpDown, Home, Package, Search, Settings, Drill, DoorOpen, UsersRound, Info, LogOut } from "lucide-react"
+import { ArrowUpDown, Home, Package, Search, Settings, Drill, DoorOpen, UsersRound, Info, LogOut, ShoppingCart } from "lucide-react"
 import { supabase } from "@/app/lib/supabaseClient"
 import { useAuthenticationStore } from "@/app/store/authentication"
 
@@ -45,6 +45,11 @@ const items = [
     title: "Búsqueda",
     url: "/app/search",
     icon: Search,
+  },
+  {
+    title: "Compras",
+    url: "/app/shop",
+    icon: ShoppingCart,
   },
 
   {

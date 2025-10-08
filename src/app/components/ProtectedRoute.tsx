@@ -8,7 +8,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) {
-        window.location.href = "/app"; // no logueado
+        window.location.href = "/app/login"; // no logueado
       } else {
         setSession(data.session);
       }

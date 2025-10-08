@@ -1,5 +1,6 @@
-import { ArrowUpDown, Home, Package, Search, Settings, Drill, DoorOpen, UsersRound } from "lucide-react"
-
+import { ArrowUpDown, Home, Package, Search, Settings, Drill, DoorOpen, UsersRound, Info, LogOut } from "lucide-react"
+import { supabase } from "@/app/lib/supabaseClient"
+import { useAuthenticationStore } from "@/app/store/authentication"
 
 import {
   Sidebar,
@@ -11,12 +12,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/app/components/ui/sidebar"
+import { toast } from "sonner"
 
 // Menu items.
 const items = [
   {
-    title: "Home",
-    url: "/app/home",
+    title: "Pañol",
+    url: "/app/paniol",
     icon: Home,
   },
   {
@@ -34,11 +36,29 @@ const items = [
     url: "/app/departments",
     icon: DoorOpen,
   },
-  // {
-  //   title: "Movimientos",
-  //   url: "#",
-  //   icon: ArrowUpDown,
-  // },
+  {
+    title: "Movimientos",
+    url: "/app/movements",
+    icon: ArrowUpDown,
+  },
+  {
+    title: "Búsqueda",
+    url: "/app/search",
+    icon: Search,
+  },
+
+  {
+    title: "Cerrar Sesión",
+    url: "#",
+    icon: LogOut,
+  },
+
+  {
+    title: "Información",
+    url: "/app/info",
+    icon: Info,
+  },
+
   // {
   //   title: "Voluntarios",
   //   url: "#",
@@ -48,17 +68,36 @@ const items = [
 ]
 
 export function AppSidebar() {
+  const { logout } = useAuthenticationStore()
+
+  const handleLogout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    try {
+      await supabase.auth.signOut()
+
+      await logout()
+    } finally {
+      window.location.href = "/app"
+      toast.success("Sesión cerrada exitosamente")
+    }
+  }
   return (
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>GCSR F</SidebarGroupLabel>
+          <SidebarGroupLabel>Stockly</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <a href={item.url}
+                    onClick={(e) => {
+                      if (item.title === "Cerrar Sesión") {
+                        e.preventDefault()
+                        handleLogout(e)
+                      }
+                    }}>
                       <item.icon />
                       <span>{item.title}</span>
                     </a>

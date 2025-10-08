@@ -21,15 +21,27 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("🔐 Intentando login con:", email);
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
+
     if (error) {
+      console.error("❌ Error de autenticación:", error.message);
       setError(error.message)
     } else {
-      console.log("Sesion Iniciada:", data);
-      window.location.href ="/app/home";
+      console.log("✅ Login exitoso:", {
+        user: data.user?.id,
+        email: data.user?.email,
+        session: data.session ? "Sesión creada" : "Sin sesión"
+      });
+
+      // Pequeña pausa para asegurar que la sesión se establezca
+      setTimeout(() => {
+        window.location.href ="/app/paniol";
+      }, 100);
     }
   };
 
@@ -78,7 +90,7 @@ export default function Login() {
       <CardFooter className="flex flex-col items-center justify-center">
         <div className="flex justify-between pb-4 w-full">
           <p className="text-sm text-gray-500">¿No tienes una cuenta?</p>
-          <a className="text-sm text-blue-400" href="/register">
+          <a className="text-sm text-blue-400" href="/app/signup">
             Regístrate
           </a>
         </div>

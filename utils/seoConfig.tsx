@@ -1,9 +1,9 @@
 import type { ManifestOptions } from "vite-plugin-pwa"
 
-const NAME = " GCSRf"
+const NAME = "Stockly"
 const SHORT_NAME = "Gf"
 const DESCRIPTION =
-	"GDCf DEPO is a stock management system that helps you manage your stock efficiently and effectively. It provides a user-friendly interface and powerful features to help you keep track of your stock levels and new entries."
+	"Stockly is a stock management system that helps you manage your stock efficiently and effectively. It provides a user-friendly interface and powerful features to help you keep track of your stock levels and new entries."
 
 /**
  * Defines the default SEO configuration for the website.

@@ -22,15 +22,16 @@ type Inventory = {
   color?: string;
   manufactur?: string;
   barcode?: string;
-  hasQRcode?: boolean;
   description?: string;
+  department_id?: number;
 };
 
 type Tool = {
   id: number;
   name: string;
   description?: string;
-  amount: number;
+  quantity: number;
+  department_id?: number;
 };
 
 type Department = {
@@ -51,13 +52,13 @@ export default function DepartmentDetailPage() {
   const fetchData = async () => {
     setLoading(true);
     if (!documentId) return;
-    const departmentId = parseInt(documentId);
+    const department_id = parseInt(documentId); 
 
     try {
       const [depRes, matRes, toolsRes] = await Promise.all([
-        supabase.from("departments").select("*").eq("id", departmentId).single(),
-        supabase.from("inventory").select("*").eq("department_id", departmentId),
-        supabase.from("tools").select("id, name, description, amount").eq("department_id", departmentId),
+        supabase.from("departments").select("*").eq("id", department_id).single(),
+        supabase.from("inventory").select("*").eq("department_id", department_id),
+        supabase.from("tools").select("id, name, description, quantity").eq("department_id", department_id),
       ]);
 
       if (depRes.error) throw depRes.error;
@@ -154,7 +155,7 @@ export default function DepartmentDetailPage() {
                 <Card key={tool.id} className="p-4 shadow-sm border">
                   <h2 className="text-lg font-semibold">{tool.name}</h2>
                   {tool.description && <p className="text-sm text-gray-500">{tool.description}</p>}
-                  <p className="text-sm text-gray-500">{tool.amount} disponibles</p>
+                  <p className="text-sm text-gray-500">{tool.quantity} disponibles</p>
                 </Card>
               ))
             )}

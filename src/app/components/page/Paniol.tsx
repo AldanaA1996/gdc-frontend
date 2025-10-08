@@ -1,0 +1,100 @@
+import Layout from "@/app/components/layout";
+import { useEffect, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
+import { Label } from "@/app/components/ui/label";
+import { Input } from "@/app/components/ui/input";
+import { Button } from "@/app/components/ui/button";
+import { supabase } from "@/app/lib/supabaseClient";
+import { toast } from "sonner";
+import { useAuthenticationStore } from "@/app/store/authentication";
+import { TriangleAlert } from "lucide-react";
+// import BarcodeScanner from "@/app/components/scaneer"; // scanner deshabilitado temporalmente
+import EgressMaterialForm from "@/app/components/egressMaterial";
+import IngressMaterialForm from "@/app/components/ingressMaterial-form";
+import { Toaster } from "sonner";
+import EgressTool from "../egressTool";
+import ReturnTool from "../ingressTool";
+
+
+
+export default function Pañol() {
+
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [alerted, setAlerted] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchInitial = async () => {
+      const { data: mats } = await supabase.from("inventory").select("id,name,quantity,manufactur,min_quantity");
+      setMaterials((mats as any) || []);
+    };
+    fetchInitial();
+  }, []);
+
+  const refreshMaterials = async () => {
+    const { data } = await supabase.from("inventory").select("id,name,quantity,manufactur,min_quantity");
+    setMaterials((data as any) || []);
+  };
+
+  // Low-stock alerts
+  useEffect(() => {
+    if (!materials?.length) return;
+    setAlerted((prev) => {
+      const next = new Set(prev);
+      materials.forEach((m) => {
+        const min = typeof m.min_quantity === 'number' ? m.min_quantity : undefined;
+        if (min !== undefined && min >= 0 && typeof m.quantity === 'number' && m.quantity <= min) {
+          if (!next.has(m.id)) {
+            
+            toast.warning(` Stock bajo: ${m.name} ${m.manufactur}`, {
+              description: ` Cantidad actual: ${m.quantity}${m.unit ? ' ' + m.unit : ''}. Mínimo definido: ${min}.`,
+              duration: 3000,
+              icon: <TriangleAlert /> 
+            });
+            next.add(m.id);
+          }
+        }
+      });
+      return next;
+    });
+  }, [materials]);
+
+  return (
+    <Layout>      
+      <div className="flex flex-col w-full p-6">
+        <h1 className="text-xl font-semibold mb-4">Movimientos diarios de ingresos y egresos</h1>
+        <h2> Herramientas </h2>
+        <Tabs defaultValue="egress" className="w-full md:w-3/4 py-4 px-2">
+          <TabsList  className="w-full flex justify-center mb-2">
+            <TabsTrigger value="egress">Egreso</TabsTrigger>
+            <TabsTrigger value="ingress">Ingreso</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="egress">
+            <EgressTool />
+          </TabsContent>
+          <TabsContent value="ingress">
+            <ReturnTool />
+          </TabsContent>
+          
+        </Tabs>
+      <h2> Materiales </h2>
+        <Tabs defaultValue="egreso" className="w-full md:w-3/4 py-4 px-2">
+          <TabsList className="w-full flex justify-center mb-2">
+            <TabsTrigger value="egreso">Egreso</TabsTrigger>
+            <TabsTrigger value="ingreso">Ingreso</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="ingreso">
+     
+            <IngressMaterialForm />
+          </TabsContent>
+
+          <TabsContent value="egreso">
+
+            <EgressMaterialForm />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </Layout>
+  );
+}

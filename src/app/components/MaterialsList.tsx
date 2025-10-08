@@ -42,7 +42,6 @@ useEffect(() => {
                             className="border p-2 rounded flex justify-between items-center">
                             <span>{m.name}</span>
                             <span className="font-semibold">{m.quantity}</span>
-
                         </li>
                     ))}
                 </ul>

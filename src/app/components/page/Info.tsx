@@ -1,10 +1,10 @@
 import Layout from "@/app/components/layout";
 
-export default function Home() {
+export default function Info() {
   return (
     <Layout>
       <div className="flex flex-col items-center w-full p-6">
-        <h1 className="text-3xl font-bold mb-6 text-center">Bienvenido GCSR F</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">Bienvenido Stockly</h1>
          
         <div className="max-w-4xl mx-auto text-lg">
           <p className="mb-4">

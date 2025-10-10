@@ -87,7 +87,26 @@ function EgressTool({ onToolUpdate }: EgressToolProps) {
       if (updateError) throw updateError;
 
       // 2️⃣ Crear registro en activity
-      const now = new Date(); const horaActual = now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); const fechaActual = now.toLocaleDateString("es-AR", { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-') + 'T' + now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); const { error: activityError } = await supabase.from("activity").insert([ { tool: selectedTool.id, activity_type: 'return', user_creator: userCreatorId, created_by: user?.id ?? null, created_at: horaActual, created_date: fechaActual, }, ]); if (activityError) throw activityError;
+      const now = new Date(); 
+      const horaActual = now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); 
+      const fechaActual = now.toLocaleDateString("es-AR", { year: 'numeric', month: '2-digit', day: '2-digit' })
+        .split('/')
+        .reverse()
+        .join('-') + 'T' + now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); 
+        const { error: activityError } = await supabase
+        .from("activity")
+        .insert([ 
+          { 
+            tool: selectedTool.id, 
+            activity_type: 'borrow', 
+            user_creator: userCreatorId, 
+            created_by: user?.id ?? null, 
+            created_at: horaActual, 
+            created_date: fechaActual, 
+          }, 
+        ]);
+        if (activityError) throw activityError;
+
       // 3️⃣ Resetear estado y formulario
       form.reset();
       setSearchTerm("");

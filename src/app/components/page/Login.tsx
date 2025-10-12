@@ -77,6 +77,12 @@ export default function Login() {
               
             />
 
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full bg-teal-700 hover:bg-teal-600 text-white"

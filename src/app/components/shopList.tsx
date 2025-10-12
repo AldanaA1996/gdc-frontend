@@ -85,16 +85,14 @@ export default function ShopList() {
             <Card key={m.id} className="p-4 shadow-sm border">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold">{m.name}</h2>
+                  <h2 className="text-lg font-semibold">{m.name} <span className="text-sm text-blue-600">{m.manufactur}</span></h2>
                   <p className="text-sm text-gray-600">
                     Actual: {m.quantity} {m.unit ?? ""} · Máximo: {m.max}
                   </p>
                   <p className="text-sm font-medium">
-                    Comprar: <span className="text-blue-700">{m.needed}</span> {m.unit ?? ""}
+                    Comprar: <span className="text-green-600">{m.needed}</span> {m.unit ?? ""}
                   </p>
-                  {m.manufactur && (
-                    <p className="text-xs text-gray-500">Marca: {m.manufactur}</p>
-                  )}
+                  
                 </div>
               </div>
             </Card>

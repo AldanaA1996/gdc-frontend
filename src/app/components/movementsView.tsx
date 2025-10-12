@@ -304,7 +304,7 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
           <Card key={id} className="p-3 w-full border border-gray-200 shadow-sm hover:shadow-md transition-all duration-150 rounded-xl bg-white">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-[200px]">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 ">
                   <span className="font-semibold">{itemName}</span>
                   {typeDisplay.label && (
                     <span className={`text-xs rounded px-2 py-0.5 font-medium ${typeDisplay.color}`}>
@@ -313,24 +313,25 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
                   )}
                   {qty}
                 </div>
-                <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-3">
-                  {when && <span>{when}</span>}
-                  {user && (
-                    <span>
-                      Creado por: <span className="font-medium">{user}</span>
-                    </span>
-                  )}
+                               
+                   <div className="text-xs text-gray-500 mt-1 grid grid-cols-1 md:grid-cols-2 gap-1">
                   {volunteerName && (
                     <span>
                       Voluntario: <span className="font-medium">{volunteerName}</span>
                     </span>
                   )}
-                </div>
+                  {user && (
+                    <span>
+                      Creado por: <span className="font-medium">{user}</span>
+                    </span>
+                  )}
+                </div> 
+                {when && <span className="text-xs text-gray-500 mt-1">{when}</span>}
               </div>
 
               {!deleteMode && (
                 <div className="ml-auto pl-2">
-                  <Button variant="outline" size="sm" onClick={() => requestDeleteSingle(m.id)}>
+                  <Button variant="destructive" size="sm" onClick={() => requestDeleteSingle(m.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

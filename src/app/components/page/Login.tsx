@@ -46,7 +46,8 @@ export default function Login() {
   };
 
   return (
-    <Card className="w-96 mx-auto mt-20 bg-gray shadow-lg p-6 justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundImage: 'url(/images/bgStockly.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+    <Card className="w-96 mx-auto  bg-white/50  shadow-lg p-6 justify-center">
       <CardHeader className="text-center">
         <CardTitle>Login</CardTitle>
         <CardDescription>Inicia Sesión</CardDescription>
@@ -78,7 +79,7 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-teal-700 hover:bg-teal-600 text-white"
               onSubmit={handleLogin}
             >
               Iniciar sesión
@@ -100,6 +101,7 @@ export default function Login() {
           </a>
         </div>
       </CardFooter>
-    </Card>
+    </Card>  
+    </div>
   );
 }

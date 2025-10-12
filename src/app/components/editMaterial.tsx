@@ -19,7 +19,7 @@ const schema = z.object({
   height: z.number().nullable().optional(),
   color: z.string().nullable().optional(),
   manufactur: z.string().nullable().optional(),
-  barcode: z.number().nullable().optional(),
+  // barcode: z.number().nullable().optional(),
   description: z.string().nullable().optional(),
   unit: z.enum(Medidas),
   min_quantity: z.number().nullable().optional(),
@@ -37,7 +37,7 @@ interface EditMaterialFormProps {
     height?: number;
     color?: string;
     manufactur?: string;
-    barcode?: number;
+    // barcode?: number;
     min_quantity?: number;
     max_quantity?: number;
     description?: string;
@@ -85,7 +85,7 @@ function EditMaterialForm({ material, onClose }: EditMaterialFormProps) {
       height: material.height,
       color: material.color,
       manufactur: material.manufactur,
-      barcode: material.barcode,
+      // barcode: material.barcode,
       description: material.description,
       unit: material.unit,
       min_quantity: material.min_quantity,
@@ -104,7 +104,7 @@ function EditMaterialForm({ material, onClose }: EditMaterialFormProps) {
       height: material.height ?? null,
       color: material.color ?? null,
       manufactur: material.manufactur ?? null,
-      barcode: material.barcode ?? null,
+      // barcode: material.barcode ?? null,
       description: material.description ?? null,
       unit: material.unit,
       min_quantity: typeof material.min_quantity === 'number' ? material.min_quantity : null,
@@ -188,12 +188,11 @@ function EditMaterialForm({ material, onClose }: EditMaterialFormProps) {
       <Label htmlFor="max_quantity">Stock máximo sugerido (opcional)</Label>
       <Input id="max_quantity" type="number"  min="0" {...form.register('max_quantity', { valueAsNumber: true })} />
      
-     <div className="flex flex-col md:flex-row gap-4">
+     {/* <div className="flex flex-col md:flex-row gap-4">
       <Label htmlFor="barcode">Bar Code</Label>
-      <Input id="barcode" {...form.register('barcode', { setValueAs: (v)=> (v === "" || v === undefined ? null : v) })} />
+      <Input id="barcode" {...form.register('barcode', { setValueAs: (v)=> (v === "" || v === undefined ? null : v) })} />    
+      </div> */}
       
-      
-      </div>
       <Label htmlFor="manufactur">Fabricante</Label>
       <Input id="manufactur" {...form.register('manufactur')} />
      

@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,13 +9,16 @@ import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/app/components/ui/select";
 
 import { useAuthenticationStore } from "../store/authentication";
 import { supabase } from "../lib/supabaseClient";
 import { useSearch } from "../hooks/use-tool-search";
+import { useVolunteerSearch } from "../hooks/use-volunteer-search";
 
 const schema = z.object({
   toolId: z.string().min(1, "Debes seleccionar una herramienta."),
+  volunteerId: z.string().optional(),
 });
 
 export type Tool = {
@@ -24,22 +29,27 @@ export type Tool = {
 };
 
 interface EgressToolProps {
-  onToolUpdate?: () => void; // ✅ nueva prop para actualizar el contador
+  onToolUpdate?: () => void;
 }
 
 function EgressTool({ onToolUpdate }: EgressToolProps) {
   const { tools, isLoading, setSearchTerm, searchTerm, setTools } = useSearch();
+  const { volunteers, isLoading: volunteerLoading, setSearchTerm: setVolunteerSearchTerm, searchTerm: volunteerSearchTerm } = useVolunteerSearch();
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const [selectedVolunteer, setSelectedVolunteer] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   const user = useAuthenticationStore((state) => state.user);
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
       toolId: "",
+      volunteerId: "",
     },
   });
+
+  // 🔹 Cargar voluntarios (ahora usando el hook)
+  // Eliminado: useEffect para cargar voluntarios, ahora se hace via hook
 
   const getDbUserId = async (): Promise<number | null> => {
     if (!user?.id) return null;
@@ -64,10 +74,12 @@ function EgressTool({ onToolUpdate }: EgressToolProps) {
   const onSubmit = async (values: z.infer<typeof schema>) => {
     setError(null);
     if (!selectedTool) {
-      setError("Por favor, selecciona una herramienta.");
-      toast.error("Por favor, selecciona una herramienta de la lista.");
+      setError("Por favor, seleccioná una herramienta.");
+      toast.error("Por favor, seleccioná una herramienta de la lista.");
       return;
     }
+
+    // Volunteer is optional, no validation needed
 
     if (selectedTool.inUse) {
       setError("La herramienta ya está prestada.");
@@ -86,37 +98,52 @@ function EgressTool({ onToolUpdate }: EgressToolProps) {
         .eq("id", selectedTool.id);
       if (updateError) throw updateError;
 
-      // 2️⃣ Crear registro en activity
-      const now = new Date(); 
-      const horaActual = now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); 
-      const fechaActual = now.toLocaleDateString("es-AR", { year: 'numeric', month: '2-digit', day: '2-digit' })
-        .split('/')
-        .reverse()
-        .join('-') + 'T' + now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); 
-        const { error: activityError } = await supabase
-        .from("activity")
-        .insert([ 
-          { 
-            tool: selectedTool.id, 
-            activity_type: 'borrow', 
-            user_creator: userCreatorId, 
-            created_by: user?.id ?? null, 
-            created_at: horaActual, 
-            created_date: fechaActual, 
-          }, 
-        ]);
-        if (activityError) throw activityError;
+      // 2️⃣ Crear registro en activity con volunteer_id
+      const now = new Date();
+      const horaActual = now.toLocaleTimeString("es-AR", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+      const fechaActual =
+        now
+          .toLocaleDateString("es-AR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          })
+          .split("/")
+          .reverse()
+          .join("-") +
+        "T" +
+        horaActual;
+
+      const { error: activityError } = await supabase.from("activity").insert([
+        {
+          tool: selectedTool.id,
+          activity_type: "borrow",
+          user_creator: userCreatorId,
+          created_by: user?.id ?? null,
+          created_at: horaActual,
+          created_date: fechaActual,
+          volunteer: selectedVolunteer?.id || null, // Usar selectedVolunteer.id si existe
+        },
+      ]);
+      if (activityError) throw activityError;
 
       // 3️⃣ Resetear estado y formulario
       form.reset();
       setSearchTerm("");
       setSelectedTool(null);
+      setVolunteerSearchTerm("");
+      setSelectedVolunteer(null);
 
       toast.success("Herramienta prestada correctamente", {
-        description: `Se registró la salida de ${selectedTool.name} como 'en uso'.`,
+        description: `Se registró la salida de ${selectedTool.name}${selectedVolunteer ? ` para ${selectedVolunteer.name} ${selectedVolunteer.surname}` : ""}.`,
       });
 
-      // 4️⃣ Actualizar contador en el componente padre
+      // 4️⃣ Actualizar contador
       if (onToolUpdate) onToolUpdate();
     } catch (err: any) {
       console.error("Error al prestar la herramienta:", err);
@@ -126,11 +153,17 @@ function EgressTool({ onToolUpdate }: EgressToolProps) {
   };
 
   const handleSelectTool = (tool: Tool) => {
-    if (tool.inUse) return; // prevenir selección de herramientas en uso
+    if (tool.inUse) return;
     setSelectedTool(tool);
     form.setValue("toolId", tool.id, { shouldValidate: true });
     setSearchTerm(tool.name);
     setTools([]);
+  };
+
+  const handleSelectVolunteer = (volunteer: any) => {
+    setSelectedVolunteer(volunteer);
+    form.setValue("volunteerId", volunteer.id, { shouldValidate: true });
+    setVolunteerSearchTerm(`${volunteer.name} ${volunteer.surname}`);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -142,6 +175,7 @@ function EgressTool({ onToolUpdate }: EgressToolProps) {
   return (
     <div className="p-4 bg-gray-50 rounded-lg shadow-md">
       <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
+        {/* 🔍 Buscar herramienta */}
         <div className="flex flex-col gap-2 relative">
           <Label htmlFor="search">Buscar Herramienta</Label>
           <Input
@@ -152,10 +186,9 @@ function EgressTool({ onToolUpdate }: EgressToolProps) {
               if (selectedTool) setSelectedTool(null);
               form.setValue("toolId", "", { shouldValidate: true });
             }}
-            placeholder="Escribe para buscar herramienta..."
+            placeholder="Escribí para buscar herramienta..."
             autoComplete="off"
           />
-
           {tools.length > 0 && (
             <ul className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
               {tools.map((tool: Tool) => (
@@ -173,32 +206,64 @@ function EgressTool({ onToolUpdate }: EgressToolProps) {
               ))}
             </ul>
           )}
-
           {isLoading && <p className="text-sm text-gray-500">Buscando...</p>}
-        </div>
 
+        </div>
+        {/* tool selected */}
         {selectedTool && (
-          <p
-            className={`text-sm p-2 rounded-md border ${
-              selectedTool.inUse
-                ? "bg-red-50 border-red-200"
-                : "bg-blue-50 border-blue-200"
-            }`}
-          >
-            <span className="font-semibold">Seleccionada:</span> {selectedTool.name}
-            <br />
-            <span className="font-semibold">Estado:</span>{" "}
-            {selectedTool.inUse ? "En uso" : "Disponible"}
+          <p className="text-sm p-2 rounded-md border bg-green-50 border-green-200">
+            <span className="font-semibold">Herramienta seleccionada:</span> {selectedTool.name}
           </p>
         )}
 
+        {/* 👤 Buscar voluntario */}
+        <div className="flex flex-col gap-2 relative">
+          <Label htmlFor="volunteerSearch">Buscar Voluntario</Label>
+          <Input
+            id="volunteerSearch"
+            value={volunteerSearchTerm}
+            onChange={(e) => {
+              setVolunteerSearchTerm(e.target.value);
+              if (selectedVolunteer) setSelectedVolunteer(null);
+              form.setValue("volunteerId", "", { shouldValidate: true });
+            }}
+            placeholder="Escribí para buscar voluntario..."
+            autoComplete="off"
+          />
+          {volunteers.length > 0 && (
+            <ul className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+              {volunteers.map((volunteer) => (
+                <li
+                  key={volunteer.id}
+                  className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSelectVolunteer(volunteer)}
+                >
+                  {volunteer.name} — #{volunteer.volunteer_number}
+                </li>
+              ))}
+            </ul>
+          )}
+          {volunteerLoading && <p className="text-sm text-gray-500">Buscando...</p>}
+        </div>
+
+        {/* 👥 Voluntario seleccionado */}
+        {selectedVolunteer && (
+          <p className="text-sm p-2 rounded-md border bg-green-50 border-green-200">
+            <span className="font-semibold">Voluntario seleccionado:</span> {selectedVolunteer.name} {selectedVolunteer.surname} — #{selectedVolunteer.volunteer_number}
+          </p>
+        )}
+
+        {/* ⚠️ Error */}
         {error && (
           <p className="text-red-500 text-sm bg-red-50 p-2 rounded-md">{error}</p>
         )}
 
+        {/* 🚀 Botón */}
         <Button
           type="submit"
-          disabled={!selectedTool || selectedTool.inUse || form.formState.isSubmitting}
+          disabled={
+            !selectedTool || selectedTool.inUse || form.formState.isSubmitting
+          }
         >
           {form.formState.isSubmitting ? "Procesando..." : "Prestar Herramienta"}
         </Button>

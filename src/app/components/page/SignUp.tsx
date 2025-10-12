@@ -72,11 +72,30 @@ export default function SignUp() {
                 email,
                 name: nombre || null,
                 volunteerNumber: numeroParsed,
+                
               },
             ]);
           if (insertErr) {
             console.error("❌ Error insertando en tabla user:", insertErr);
             setError("No se pudo crear el usuario en la base de datos: " + insertErr.message);
+            setLoading(false);
+            return;
+          } else {
+            console.log("✅ Usuario creado exitosamente en tabla personalizada");
+          }
+
+          const { error: insertErr2 } = await supabase
+            .from("volunteers")
+            .insert([
+              {
+                
+                name: nombre || null,
+                volunteer_number: numeroParsed,
+              },
+            ]);
+          if (insertErr2) {
+            console.error("❌ Error insertando en tabla user:", insertErr2);
+            setError("No se pudo crear el usuario en la base de datos: " + insertErr2.message);
             setLoading(false);
             return;
           } else {
@@ -101,9 +120,9 @@ export default function SignUp() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundImage: 'url(/images/bgStockly.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
         <div className="max-w-md w-full space-y-8">
-          <Card className="bg-white shadow-lg">
+          <Card className="bg-white/50 backdrop-blur border-b border-gray-700 rounded-xl shadow-lg">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold text-green-600">
                 ¡Cuenta creada exitosamente!
@@ -113,7 +132,7 @@ export default function SignUp() {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="p-4 bg-green-50 border border-green-200 rounded-md mb-4">
+              <div className="p-4 bg-green-50 border border-green-200 rounded-md mb-4" >
                 <p className="text-sm text-green-600">
                   Hemos enviado un enlace de confirmación a <strong>{email}</strong>
                 </p>
@@ -135,15 +154,15 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundImage: 'url(/images/bgStockly.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
       <div className="max-w-md w-full space-y-8">
-        <Card className="bg-white shadow-lg">
+        <Card className="bg-white/50 backdrop-blur rounded-xl shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-gray-900">
               Crear Cuenta
             </CardTitle>
             <CardDescription className="text-gray-600">
-              Regístrate en LEIA para comenzar
+              Regístrate en Stockly para comenzar
             </CardDescription>
           </CardHeader>
 
@@ -158,7 +177,7 @@ export default function SignUp() {
               
                 <div>
                   <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre y Apellido
+                    Nombre y apellido
                   </label>
                   <Input
                     id="nombre"
@@ -171,6 +190,7 @@ export default function SignUp() {
                     disabled={loading}
                   />
                 </div>
+                
                 
               <div>
                 <label htmlFor="numeroVoluntario" className="block text-sm font-medium text-gray-700 mb-1">

@@ -15,6 +15,7 @@ import { Movements } from "./components/page/Movements";
 import SearchPage from "./components/page/Search";
 import { Info } from "./components/page/Info";
 import Shop from "./components/page/Shop";
+import VolunteersPage from "./components/page/Volunteers";
 
 
 export default function App() {
@@ -106,6 +107,13 @@ export default function App() {
                         element={
                             <ProtectedRoute>
                               <SearchPage/>
+                            </ProtectedRoute>
+                        }
+                    />
+                <Route path="/app/volunteers" 
+                        element={
+                            <ProtectedRoute>
+                              <VolunteersPage/>
                             </ProtectedRoute>
                         }
                     />

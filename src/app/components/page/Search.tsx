@@ -11,6 +11,11 @@ import { SquarePen, Eye, Trash2, Package, Wrench, Download } from "lucide-react"
 import downloadInventoryCsv from "@/app/components/csvDownload";
 
 // Types
+type Department = {
+  id: number;
+  name: string;
+};
+
 type Inventory = {
   id: number;
   name: string;
@@ -25,6 +30,7 @@ type Inventory = {
   barcode?: number | null;
   hasQRcode?: boolean | null;
   description?: string | null;
+  department_id?: number;
 };
 
 type Tool = {
@@ -37,6 +43,9 @@ type Tool = {
   barcode?: number | null;
   description?: string | null;
   status?: string | null;
+  purchase_date?: string | null;
+  warranty_expirationdate?: string | null;
+  department_id?: number;
 };
 
 type SearchItem = (Inventory | Tool) & {
@@ -48,6 +57,7 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true);
   const [materials, setMaterials] = useState<Inventory[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [onlyLow, setOnlyLow] = useState<boolean>(false);
   const [filterType, setFilterType] = useState<'all' | 'materials' | 'tools'>('all');
   
@@ -70,9 +80,10 @@ export default function SearchPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const [matRes, toolRes] = await Promise.all([
+        const [matRes, toolRes, deptRes] = await Promise.all([
           supabase.from("inventory").select("*"),
           supabase.from("tools").select("*"),
+          supabase.from("departments").select("*"),
         ]);
         
         if (!matRes.error && matRes.data) setMaterials(matRes.data as Inventory[]);
@@ -80,6 +91,9 @@ export default function SearchPage() {
 
         if (!toolRes.error && toolRes.data) setTools(toolRes.data as Tool[]);
         else if (toolRes.error) console.error("Error al cargar herramientas:", toolRes.error);
+
+        if (!deptRes.error && deptRes.data) setDepartments(deptRes.data as Department[]);
+        else if (deptRes.error) console.error("Error al cargar departamentos:", deptRes.error);
       } finally {
         setLoading(false);
       }
@@ -156,7 +170,13 @@ export default function SearchPage() {
     const toolItems: SearchItem[] = tools.map(t => ({ ...t, itemType: 'tool' as const }));
     return [...matItems, ...toolItems];
   }, [materials, tools]);
-
+  // Función para obtener el nombre del departamento por ID
+  
+  const getDepartmentName = (departmentId: number | undefined): string => {
+    if (!departmentId) return '';
+    const department = departments.find(d => d.id === departmentId);
+    return department?.name || `Departamento ${departmentId}`;
+  };
   // Filter by search query
   const filteredItems = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -179,6 +199,7 @@ export default function SearchPage() {
           item.barcode ?? "",
           item.description ?? "",
           (item as any).color ?? "",
+          getDepartmentName(item.department_id) ?? "",
         ]
           .join(" ")
           .toLowerCase();
@@ -230,8 +251,8 @@ export default function SearchPage() {
     color: m.color ?? undefined,
     manufactur: m.manufactur ?? undefined,
     barcode: m.barcode ?? undefined,
-    hasQrCode: (m as any).hasQrCode ?? (m as any).hasQRcode ?? undefined,
     description: m.description ?? undefined,
+    department_id: m.department_id ?? undefined,
   });
 
   const normalizeTool = (t: Tool) => ({
@@ -244,6 +265,9 @@ export default function SearchPage() {
     barcode: t.barcode ?? undefined,
     description: t.description ?? undefined,
     status: t.status ?? undefined,
+    purchase_date: t.purchase_date ?? undefined,
+    warranty_expirationdate: t.warranty_expirationdate ?? undefined,
+    department_id: t.department_id ?? undefined,
   });
 
   return (
@@ -350,9 +374,13 @@ export default function SearchPage() {
                         {item.manufactur && (
                           <p className="text-sm text-gray-500">Fabricante: {item.manufactur}</p>
                         )}
-                        {item.barcode && (
-                          <p className="text-sm text-gray-500">Código: {item.barcode}</p>
+
+                        {item.department_id && (
+                          <p className="text-sm text-gray-500">Departamento: {getDepartmentName(item.department_id)}</p>
                         )}
+                        {/* {item.barcode && (
+                          <p className="text-sm text-gray-500">Código: {item.barcode}</p>
+                        )} */}
                         {item.description && (
                           <p className="text-sm text-gray-500">{item.description}</p>
                         )}
@@ -415,8 +443,15 @@ export default function SearchPage() {
                   {selectedItem.manufactur && <p><strong>Fabricante:</strong> {selectedItem.manufactur}</p>}
                   {selectedItem.barcode && <p><strong>Código:</strong> {selectedItem.barcode}</p>}
                   {selectedItem.description && <p><strong>Descripción:</strong> {selectedItem.description}</p>}
+                  {selectedItem.department_id && <p><strong>Departamento:</strong> {getDepartmentName(selectedItem.department_id)}</p>}
                   {selectedItem.itemType === 'tool' && (selectedItem as Tool).status && (
                     <p><strong>Estado:</strong> {(selectedItem as Tool).status}</p>
+                  )}
+                  {selectedItem.itemType === 'tool' && (selectedItem as Tool).purchase_date && (
+                    <p><strong>Fecha de compra:</strong> {(selectedItem as Tool).purchase_date}</p>
+                  )}
+                  {selectedItem.itemType === 'tool' && (selectedItem as Tool).warranty_expirationdate && (
+                    <p><strong>Fecha de vencimiento de garantía:</strong> {(selectedItem as Tool).warranty_expirationdate}</p>
                   )}
                 </div>
               )}

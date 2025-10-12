@@ -11,9 +11,11 @@ import { Label } from "@/app/components/ui/label";
 import { useAuthenticationStore } from "../store/authentication";
 import { supabase } from "../lib/supabaseClient";
 import { useSearch } from "../hooks/use-tool-return-search";
+import { useVolunteerSearch } from "../hooks/use-volunteer-search";
 
 const schema = z.object({
   toolId: z.string().min(1, "Debes seleccionar una herramienta."),
+  volunteerId: z.string().optional(),
 });
 
 export type Tool = {
@@ -29,7 +31,9 @@ interface ReturnToolProps {
 
 function ReturnTool({ onToolUpdate }: ReturnToolProps) {
   const { tools, isLoading, setSearchTerm, searchTerm, setTools } = useSearch();
+  const { volunteers, isLoading: volunteerLoading, setSearchTerm: setVolunteerSearchTerm, searchTerm: volunteerSearchTerm } = useVolunteerSearch();
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const [selectedVolunteer, setSelectedVolunteer] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const user = useAuthenticationStore((state) => state.user);
@@ -38,6 +42,7 @@ function ReturnTool({ onToolUpdate }: ReturnToolProps) {
     resolver: zodResolver(schema),
     defaultValues: {
       toolId: "",
+      volunteerId: "",
     },
   });
 
@@ -71,6 +76,8 @@ function ReturnTool({ onToolUpdate }: ReturnToolProps) {
       return;
     }
 
+    // Volunteer is optional, no validation needed
+
     if (!selectedTool.inUse) {
       setError("La herramienta no está prestada actualmente.");
       toast.error("Esta herramienta no está marcada como 'en uso'.");
@@ -89,15 +96,48 @@ function ReturnTool({ onToolUpdate }: ReturnToolProps) {
       if (updateError) throw updateError;
 
       // 2️⃣ Registrar devolución en activity
-      const now = new Date(); const horaActual = now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); const fechaActual = now.toLocaleDateString("es-AR", { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-') + 'T' + now.toLocaleTimeString("es-AR", { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); const { error: activityError } = await supabase.from("activity").insert([ { tool: selectedTool.id, activity_type: 'return', user_creator: userCreatorId, created_by: user?.id ?? null, created_at: horaActual, created_date: fechaActual, }, ]); if (activityError) throw activityError;
+      const now = new Date();
+      const horaActual = now.toLocaleTimeString("es-AR", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+      const fechaActual =
+        now
+          .toLocaleDateString("es-AR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          })
+          .split("/")
+          .reverse()
+          .join("-") +
+        "T" +
+        horaActual;
+
+      const { error: activityError } = await supabase.from("activity").insert([
+        {
+          tool: selectedTool.id,
+          activity_type: "return",
+          user_creator: userCreatorId,
+          created_by: user?.id ?? null,
+          created_at: horaActual,
+          created_date: fechaActual,
+          volunteer: selectedVolunteer?.id || null,
+        },
+      ]);
+      if (activityError) throw activityError;
 
       // 3️⃣ Resetear formulario y estado
       form.reset();
       setSearchTerm("");
       setSelectedTool(null);
+      setVolunteerSearchTerm("");
+      setSelectedVolunteer(null);
 
       toast.success("Herramienta devuelta correctamente", {
-        description: `Se registró la devolución de ${selectedTool.name}.`,
+        description: `Se registró la devolución de ${selectedTool.name}${selectedVolunteer ? ` por ${selectedVolunteer.name}` : ""}.`,
       });
 
       // 4️⃣ Actualizar contador en componente padre
@@ -115,6 +155,12 @@ function ReturnTool({ onToolUpdate }: ReturnToolProps) {
     form.setValue("toolId", tool.id, { shouldValidate: true });
     setSearchTerm(tool.name);
     setTools([]);
+  };
+
+  const handleSelectVolunteer = (volunteer: any) => {
+    setSelectedVolunteer(volunteer);
+    form.setValue("volunteerId", volunteer.id, { shouldValidate: true });
+    setVolunteerSearchTerm(`${volunteer.name} ${volunteer.surname}`);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -160,18 +206,48 @@ function ReturnTool({ onToolUpdate }: ReturnToolProps) {
           {isLoading && <p className="text-sm text-gray-500">Buscando...</p>}
         </div>
 
+        {/* 👤 Buscar voluntario */}
+        <div className="flex flex-col gap-2 relative">
+          <Label htmlFor="volunteerSearch">Buscar Voluntario</Label>
+          <Input
+            id="volunteerSearch"
+            value={volunteerSearchTerm}
+            onChange={(e) => {
+              setVolunteerSearchTerm(e.target.value);
+              if (selectedVolunteer) setSelectedVolunteer(null);
+              form.setValue("volunteerId", "", { shouldValidate: true });
+            }}
+            placeholder="Escribí para buscar voluntario..."
+            autoComplete="off"
+          />
+          {volunteers.length > 0 && (
+            <ul className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+              {volunteers.map((volunteer) => (
+                <li
+                  key={volunteer.id}
+                  className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSelectVolunteer(volunteer)}
+                >
+                  {volunteer.name} — #{volunteer.volunteer_number}
+                </li>
+              ))}
+            </ul>
+          )}
+          {volunteerLoading && <p className="text-sm text-gray-500">Buscando...</p>}
+        </div>
+
         {selectedTool && (
           <p
-            className={`text-sm p-2 rounded-md border ${
-              selectedTool.inUse
-                ? "bg-yellow-50 border-yellow-200"
-                : "bg-green-50 border-green-200"
-            }`}
+            className="text-sm p-2 rounded-md border bg-green-50 border-green-200"
           >
             <span className="font-semibold">Seleccionada:</span> {selectedTool.name}
-            <br />
-            <span className="font-semibold">Estado:</span>{" "}
-            {selectedTool.inUse ? "En uso" : "Disponible"}
+          </p>
+        )}
+
+        {/* 👥 Voluntario seleccionado */}
+        {selectedVolunteer && (
+          <p className="text-sm p-2 rounded-md border bg-green-50 border-green-200">
+            <span className="font-semibold">Voluntario seleccionado:</span> {selectedVolunteer.name} — #{selectedVolunteer.volunteer_number}
           </p>
         )}
 

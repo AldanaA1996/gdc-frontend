@@ -15,6 +15,7 @@ type MovementRecord = Record<string, any> & {
   quantity?: number;
   department_id?: number;
   user_id?: string;
+  volunteerd?: number;
 };
 
 interface MovementsViewProps {
@@ -35,6 +36,7 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmIds, setConfirmIds] = useState<string[]>([]);
+  const [volunteers, setVolunteers] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -43,7 +45,7 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
       try {
         const { data, error } = await supabase
           .from(tableName)
-          .select("id, material, tool, activity_type, created_at, created_date, quantity, user:user_creator (id,name, email)")
+          .select("id, material, tool, activity_type, created_at, created_date, quantity, user:user_creator (id,name, email),volunteer")
           .order("created_date", { ascending: false })
           .order("created_at", { ascending: false });
 
@@ -77,6 +79,15 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
     };
     load();
   }, [tableName]);
+
+  useEffect(() => {
+    const loadVolunteers = async () => {
+      const { data, error } = await supabase.from("volunteers").select("id, name");
+      if (error) console.error("Error loading volunteers:", error);
+      else setVolunteers(data || []);
+    };
+    loadVolunteers();
+  }, []);
 
   // Tipos de movimiento únicos
   const movementTypes = useMemo(() => {
@@ -227,7 +238,43 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
       {filtered.map((m) => {
         const id = String(m.id ?? cryptoRandomId());
         const movementType = (m as any).activity_type ?? (m as any).movementType ?? m.type;
-        const when = formatDateTime(m.created_date || m.created_at);
+
+        const when = (() => {
+          const cd = m.created_date;
+          const ca = m.created_at;
+          
+          if (cd) {
+            // Parse como fecha local, no UTC
+            const dateStr = String(cd).replace('Z', '').trim();
+            
+            // Intenta parsear formato: YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss
+            const parts = dateStr.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
+            if (parts) {
+              const [, year, month, day, hour, min, sec] = parts;
+              const d = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(min), Number(sec));
+              if (!isNaN(d.getTime())) {
+                return formatDateTimeLocal(d);
+              }
+            }
+            
+            // Fallback: formato más flexible (puede que falte segundos)
+            const match2 = dateStr.match(/(\d{4})-(\d{2})-(\d{2})[T\s]?(\d{2}):(\d{2}):?(\d{2})?/);
+            if (match2) {
+              const [, year, month, day, hour, min, sec] = match2;
+              const d = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(min), Number(sec || 0));
+              if (!isNaN(d.getTime())) {
+                return formatDateTimeLocal(d);
+              }
+            }
+            
+            // Si nada funciona, mostrar el valor raw de created_date con la hora
+            return cd + (ca ? ` (${ca})` : "");
+          }
+          
+          // Si solo hay hora, mostrarla
+          return ca ? `${ca}` : "";
+        })();
+
         const materialName = m.material ? inventoryById[String(m.material)]?.name : undefined;
         const toolName = m.tool ? toolById[String(m.tool)]?.name : undefined;
         const itemName = materialName || toolName || "Movimiento";
@@ -251,6 +298,7 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
         ) : null;
 
         const user = (m as any).user?.name;
+        const volunteerName = m.volunteer ? volunteers.find(v => v.id === m.volunteer)?.name : null;
 
         return (
           <Card key={id} className="p-3 w-full border border-gray-200 shadow-sm hover:shadow-md transition-all duration-150 rounded-xl bg-white">
@@ -270,6 +318,11 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
                   {user && (
                     <span>
                       Creado por: <span className="font-medium">{user}</span>
+                    </span>
+                  )}
+                  {volunteerName && (
+                    <span>
+                      Voluntario: <span className="font-medium">{volunteerName}</span>
                     </span>
                   )}
                 </div>
@@ -325,23 +378,15 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
   );
 }
 
-function formatDateTime(value?: string) {
-  if (!value) return "";
-  try {
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return value;
-    return d.toLocaleString("es-AR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-  } catch {
-    return value;
-  }
+function formatDateTimeLocal(d: Date) {
+  // Formato: DD/MM/YYYY HH:mm:ss (24 horas) para objeto Date ya creado como local
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const seconds = String(d.getSeconds()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 }
 
 function cryptoRandomId() {

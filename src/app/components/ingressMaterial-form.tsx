@@ -20,6 +20,7 @@ const schema = z.object({
 export type Material = {
   id: string;
   name: string;
+  manufactur: string;
   quantity: number;
   unit: string;
 };
@@ -116,7 +117,7 @@ function IngressMaterialForm() {
 
       // Notificación de éxito
       toast.success('Ingreso registrado exitosamente', {
-        description: `Material: ${selectedMaterial.name} | Cantidad: ${values.quantity} | Nuevo stock: ${newQuantity}`,
+        description: `Material: ${selectedMaterial.name} | Marca: ${selectedMaterial.manufactur} | Cantidad: ${values.quantity} | Nuevo stock: ${newQuantity}`,
       });
     } catch (err: any) {
       console.error("Error al ingresar el material:", err);
@@ -165,7 +166,7 @@ function IngressMaterialForm() {
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => handleSelectMaterial(material)}
                 >
-                  {material.name} (Disp: {material.quantity} {material.unit})
+                  {material.name} | {material.manufactur} (Disp: {material.quantity} {material.unit})
                 </li>
               ))}
             </ul>
@@ -176,7 +177,7 @@ function IngressMaterialForm() {
         {selectedMaterial && (
           <>
             <p className="text-sm p-2 bg-green-50 border border-green-200 rounded-md">
-              <span className="font-semibold">Seleccionado:</span> {selectedMaterial.name} <br />
+              <span className="font-semibold">Seleccionado:</span> {selectedMaterial.name} | {selectedMaterial.manufactur} <br />
               <span className="font-semibold">Cantidad Actual:</span> {selectedMaterial.quantity} {selectedMaterial.unit}
             </p>
 

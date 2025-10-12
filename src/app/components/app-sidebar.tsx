@@ -53,22 +53,26 @@ const items = [
   },
 
   {
-    title: "Cerrar Sesión",
-    url: "#",
-    icon: LogOut,
+    title: "Voluntarios",
+    url: "/app/volunteers",
+    icon: UsersRound,
   },
-
+  
   {
     title: "Información",
     url: "/app/info",
     icon: Info,
   },
+  
+  {
+    title: "Cerrar Sesión",
+    url: "#",
+    icon: LogOut,
+  },
 
-  // {
-  //   title: "Voluntarios",
-  //   url: "#",
-  //   icon: UsersRound,
-  // },
+  
+
+,
   
 ]
 

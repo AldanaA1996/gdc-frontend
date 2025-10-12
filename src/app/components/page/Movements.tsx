@@ -6,7 +6,7 @@ import MovementsView from "../movementsView";
 import { useState } from "react";
 
 export function Movements() {
-  const [filterBy, setFilterBy] = useState<"tool" | "material" | undefined>("material");
+  const [filterBy, setFilterBy] = useState<"tool" | "material" | undefined>("tool");
 
   return (
     <Layout>

@@ -26,9 +26,9 @@ export function useSearch () {
        try {
          const { data, error } = await supabase
            .from('inventory')
-           .select('id, name, quantity, unit')
-           .ilike('name', `%${searchTerm}%`)
-           .gt('quantity', 0);
+           .select('id, name, quantity, unit, manufactur')
+           .ilike('name', `%${searchTerm}%`);
+          //  .gte('quantity', 0);
  
          if (error) throw error;
  

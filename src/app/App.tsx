@@ -16,6 +16,8 @@ import SearchPage from "./components/page/Search";
 import { Info } from "./components/page/Info";
 import Shop from "./components/page/Shop";
 import VolunteersPage from "./components/page/Volunteers";
+import Profile from "./components/page/Profile";
+
 
 
 export default function App() {
@@ -117,10 +119,11 @@ export default function App() {
                             </ProtectedRoute>
                         }
                     />
-                <Route path="/app/info" 
+                
+                <Route path="/app/profile" 
                         element={
                             <ProtectedRoute>
-                              <Info/>
+                              <Profile/>
                             </ProtectedRoute>
                         }
                     />

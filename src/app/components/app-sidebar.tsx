@@ -1,4 +1,4 @@
-import { ArrowUpDown, Home, Package, Search, Settings, Drill, DoorOpen, UsersRound, Info, LogOut, ShoppingCart } from "lucide-react"
+import { ArrowUpDown, Home, Package, Search, Settings, Drill, DoorOpen, UsersRound, Info, LogOut, ShoppingCart, User } from "lucide-react"
 import { supabase } from "@/app/lib/supabaseClient"
 import { useAuthenticationStore } from "@/app/store/authentication"
 
@@ -51,6 +51,13 @@ const items = [
     url: "/app/shop",
     icon: ShoppingCart,
   },
+  
+
+  {
+    title: "Perfil",
+    url: "/app/profile",
+    icon: User,
+  },
 
   {
     title: "Voluntarios",
@@ -68,12 +75,7 @@ const items = [
     title: "Cerrar Sesión",
     url: "#",
     icon: LogOut,
-  },
-
-  
-
-,
-  
+  }
 ]
 
 export function AppSidebar() {

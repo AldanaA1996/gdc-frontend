@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
+import { Badge } from '@/app/components/ui/badge';
+import { Search, Package, TrendingUp, AlertCircle } from 'lucide-react';
 
 import { useAuthenticationStore } from '../store/authentication';
 import { supabase } from '../lib/supabaseClient';
@@ -149,87 +151,145 @@ function EgressMaterialForm() {
   };
 
   return (
-    <div className="p-4 bg-gray-50 rounded-lg shadow-md">
-      <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 relative">
-          <Label htmlFor="search">Buscar Material</Label>
-          <Input
-            id="search"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              if (selectedMaterial) setSelectedMaterial(null);
-              form.setValue('materialId', '', { shouldValidate: true });
-            }}
-            placeholder="Escribe para buscar..."
-            autoComplete="off"
-          />
+    <div className="px-3">
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-2">
+          <TrendingUp className="h-6 w-6 text-blue-600" />
+          <h2 className="text-2xl font-bold text-gray-800">Egreso de Material</h2>
+        </div>
+        <p className="text-sm text-gray-600">Selecciona un material y registra la cantidad retirada del inventario</p>
+      </div>
 
+      <form onSubmit={handleFormSubmit} className="space-y-3">
+        {/* Campo de búsqueda */}
+        <div className="space-y-2 relative">
+          <Label htmlFor="search" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            Buscar Material
+          </Label>
+          <div className="relative">
+            <Input
+              id="search"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                if (selectedMaterial) setSelectedMaterial(null);
+                form.setValue('materialId', '', { shouldValidate: true });
+              }}
+              placeholder="Escribe el nombre del material..."
+              autoComplete="off"
+              className="pl-10 pr-4 py-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          </div>
+
+          {/* Lista de resultados */}
           {materials.length > 0 && (
-            <ul className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+            <ul className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-xl mt-2 max-h-64 overflow-y-auto">
               {materials.map((material: Material) => (
                 <li
                   key={material.id}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 first:rounded-t-lg last:rounded-b-lg"
                   onClick={() => handleSelectMaterial(material)}
                 >
-                  {material.name} | {material.manufactur} (Disp: {material.quantity} {material.unit})
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800">{material.name}</p>
+                      <p className="text-sm text-gray-500">{material.manufactur}</p>
+                    </div>
+                    <Badge variant="secondary" className="ml-2">
+                      {material.quantity} {material.unit}
+                    </Badge>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
-          {isLoading && <p className="text-sm text-gray-500">Buscando...</p>}
+
+          {isLoading && (
+            <p className="text-sm text-blue-600 flex items-center gap-2 mt-2">
+              <span className="animate-spin">⏳</span>
+              Buscando materiales...
+            </p>
+          )}
         </div>
 
+        {/* Material seleccionado */}
         {selectedMaterial && (
-          <>
-            <p className="text-sm p-2 bg-blue-50 border border-blue-200 rounded-md">
-              <span className="font-semibold">Seleccionado:</span> {selectedMaterial.name} | {selectedMaterial.manufactur} <br />
-              <span className="font-semibold">Cantidad Disponible:</span> {selectedMaterial.quantity} {selectedMaterial.unit}
-            </p>
-
-            <div>
-              <Label htmlFor="quantity">Cantidad a Retirar</Label>
-              <Input
-                id="quantity"
-                type="number"
-                {...form.register('quantity', {
-                  valueAsNumber: true,
-                  required: "La cantidad es requerida",
-                  min: { value: 1, message: "La cantidad debe ser mayor a 0" }
-                })}
-                placeholder="Ingresa la cantidad"
-                max={selectedMaterial.quantity}
-                min="1"
-                step="1"
-              />
-              {form.formState.errors.quantity && (
-                <p className="text-red-500 text-sm">{form.formState.errors.quantity.message}</p>
-              )}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <Package className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="space-y-2 flex-1">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">Material Seleccionado</p>
+                  <p className="text-base font-bold text-gray-900">{selectedMaterial.name}</p>
+                  <p className="text-sm text-gray-600">Marca: {selectedMaterial.manufactur}</p>
+                </div>
+                <div className="flex items-center gap-2 pt-2 border-t border-blue-200">
+                  <Package className="h-4 w-4 text-blue-700" />
+                  <span className="text-sm font-medium text-gray-700">Stock Disponible:</span>
+                  <Badge variant="outline" className="bg-white border-blue-300 text-blue-700 font-semibold">
+                    {selectedMaterial.quantity} {selectedMaterial.unit}
+                  </Badge>
+                </div>
+              </div>
             </div>
-          </>
+          </div>
         )}
 
-        {error && <p className="text-red-500 text-sm bg-red-50 p-2 rounded-md">{error}</p>}
-
-        {/* Debug info
-        {process.env.NODE_ENV === 'development' && (
-          <div className="text-xs text-gray-500">
-            <p>Material seleccionado: {selectedMaterial ? 'Sí' : 'No'}</p>
-            <p>Form valid: {form.formState.isValid ? 'Sí' : 'No'}</p>
-            <p>Submitting: {form.formState.isSubmitting ? 'Sí' : 'No'}</p>
-            {Object.keys(form.formState.errors).length > 0 && (
-              <p className="text-red-500">Errores: {JSON.stringify(form.formState.errors)}</p>
+        {/* Campo de cantidad */}
+        {selectedMaterial && (
+          <div className="space-y-2">
+            <Label htmlFor="quantity" className="text-sm font-semibold text-gray-700">Cantidad a Retirar</Label>
+            <Input
+              id="quantity"
+              type="number"
+              {...form.register('quantity', {
+                valueAsNumber: true,
+                required: "La cantidad es requerida",
+                min: { value: 1, message: "La cantidad debe ser mayor a 0" }
+              })}
+              placeholder="Ingresa la cantidad"
+              max={selectedMaterial.quantity}
+              min="1"
+              step="1"
+              className="text-lg font-medium border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+            {form.formState.errors.quantity && (
+              <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-2 rounded-md border border-red-200">
+                <AlertCircle className="h-4 w-4" />
+                <p>{form.formState.errors.quantity.message}</p>
+              </div>
             )}
           </div>
-        )} */}
+        )}
 
+        {/* Mensaje de error */}
+        {error && (
+          <div className="flex items-center gap-2 text-red-700 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
+            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        {/* Botón */}
         <Button
           type="submit"
           disabled={!selectedMaterial || form.formState.isSubmitting}
           onClick={() => console.log('Button clicked, selectedMaterial:', selectedMaterial)}
+          className="w-full py-6 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
         >
-          {form.formState.isSubmitting ? "Procesando..." : "Retirar Material"}
+          {form.formState.isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <span className="animate-spin">⏳</span>
+              Procesando...
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Retirar Material
+            </span>
+          )}
         </Button>
       </form>
     </div>

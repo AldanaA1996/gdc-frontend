@@ -34,6 +34,8 @@ export function getStaticPaths() {
     { params: { route: "search" } },
     { params: { route: "volunteers" } },
     { params: { route: "departments" } },
+    { params: { route: "profile" } },
+    
     ...departments.map((d) => ({
       params: { route: `departments/${d.id}` },
     })),

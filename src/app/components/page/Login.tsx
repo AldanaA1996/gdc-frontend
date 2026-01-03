@@ -85,7 +85,7 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full bg-teal-700 hover:bg-teal-600 text-white"
+              className="w-full bg-blue-700 hover:bg-blue-600 text-white"
               onSubmit={handleLogin}
             >
               Iniciar sesión

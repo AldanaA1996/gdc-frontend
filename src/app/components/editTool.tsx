@@ -18,7 +18,7 @@ const schema = z
   name: z.string().min(1, 'El nombre es requerido'),
   quantity: z.number().min(0, 'La cantidad no puede ser negativa'),
   manufactur: z.string().nullable().optional(),
-  // barcode: z.number().nullable().optional(),
+  barcode: z.number().nullable().optional(),
   // hasQrCode: z.boolean().nullable().optional(),
   description: z.string().nullable().optional(),
   // fechas en formato string (YYYY-MM-DD) para inputs type="date"
@@ -45,7 +45,7 @@ interface EditToolFormProps {
     name: string;
     quantity: number;
     manufactur?: string;
-    // barcode?: number;
+    barcode?: number;
     // hasQrCode?: boolean;
     description?: string;
     purchase_date?: string | null;
@@ -94,7 +94,7 @@ function EditToolForm({ tools, onClose }: EditToolFormProps) {
       name: tools.name,
       quantity: tools.quantity,
       manufactur: tools.manufactur,
-      // barcode: tools.barcode,
+      barcode: tools.barcode,
       // hasQrCode: tools.hasQrCode,
       description: tools.description,
       purchase_date: tools.purchase_date ?? undefined,
@@ -112,7 +112,7 @@ function EditToolForm({ tools, onClose }: EditToolFormProps) {
       if (values.name !== tools.name) changedValues.name = values.name;
       if (values.quantity !== tools.quantity) changedValues.quantity = values.quantity;
       if (values.manufactur !== tools.manufactur) changedValues.manufactur = values.manufactur;
-      // if (values.barcode !== tools.barcode) changedValues.barcode = values.barcode;
+      if (values.barcode !== tools.barcode) changedValues.barcode = values.barcode;
       // if (values.hasQrCode !== tools.hasQrCode) changedValues.hasQrCode = values.hasQrCode;
       if (values.description !== tools.description) changedValues.description = values.description;
       if (values.purchase_date !== tools.purchase_date) changedValues.purchase_date = values.purchase_date;
@@ -218,12 +218,12 @@ function EditToolForm({ tools, onClose }: EditToolFormProps) {
       <Label htmlFor="manufactur">Fabricante</Label>
       <Input id="manufactur" {...form.register('manufactur')} />
 
-      {/* <Label htmlFor="barcode">Código de Barras</Label>
+      <Label htmlFor="barcode">Código de Barras</Label>
       <Input
         id="barcode"
         type="number"
         {...form.register('barcode', { valueAsNumber: true })}
-      /> */}
+      />
 
       <Label htmlFor="purchase_date">Fecha de compra</Label>
       <Input

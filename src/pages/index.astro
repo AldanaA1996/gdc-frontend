@@ -77,6 +77,9 @@ import "../styles/global.css"
 	.hero-section::before {
 		content: '';
 		position: absolute;
+		align-items: center;
+		display: flex;
+		justify-content: center;
 
 		top: 0;
 		left: 0;
@@ -90,50 +93,54 @@ import "../styles/global.css"
 		position: relative;
 		z-index: 2;
 		text-align: center;
-		color: #547C7D;
+		color: #18429c;
 		max-width: 600px;
 		width: 95%;
 		padding: 2rem;
+		
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1rem;
 	}
 
 	.hero-logo {
 		width: 180px;
 		height: 180px;
-		border-radius: 50%;
-		margin: 0 auto 2rem;
-		filter: drop-shadow(0 4px 8px rgba(129, 128, 128, 0.3));
+		
+		filter: drop-shadow(0 4px 8px rgba(22, 14, 138, 0.5));
 	}
 
 	.hero-title {
 		font-size: 3rem;
 		font-weight: bold;
-		margin-bottom: 1rem;
-		text-shadow: 2px 2px 4px rgba(104, 102, 102, 0.5);
+		
+		text-shadow: 2px 2px 4px rgba(22, 14, 138, 0.5);
 	}
 
 	.hero-subtitle {
 		font-size: 1.25rem;
-		margin-bottom: 2rem;
+		
 		opacity: 0.9;
-		text-shadow: 1px 1px 2px rgba(104, 102, 102, 0.5);
+		text-shadow: 1px 1px 2px rgba(1, 7, 82, 0.5);
 	}
 
 	.hero-button {
 		display: inline-block;
 		padding: 0.75rem 2rem;
-		background: #547C7D;
+		background: #5a76aa;
 		color: white;
 		text-decoration: none;
 		border-radius: 0.5rem;
 		font-weight: 600;
 		transition: all 0.3s ease;
-		/* box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); */
+		box-shadow: 0 4px 15px rgba(2, 13, 77, 0.4);
 	}
 
 	.hero-button:hover {
 		transform: translateY(-2px);
-		background: #d9f0f0;
-		color: #547C7D;
+		background: #e4e7e7;
+		color: #1a237e;
 	}
 
 	/* Responsive design */
@@ -143,9 +150,8 @@ import "../styles/global.css"
 		}
 
 		.hero-logo {
-			width: 140px;
-			height: 140px;
-			border-radius: 50%;
+			width: 150px;
+			height: 150px;
 		}
 
 		.hero-title {
@@ -163,7 +169,7 @@ import "../styles/global.css"
 		<section class="hero-section">
 			
 			<div class="hero-content bg-white/30 backdrop-blur border-b border-white/30 rounded-xl ">
-				<img src="/images/logo.jpg" alt="Logo STOCKLY" class="hero-logo" />
+				<img src="/images/gdcsr.png" alt="Logo STOCKLY" class="hero-logo" />
 				<h1 class="hero-title">Bienvenido a STOCKLY</h1>
 				<p class="hero-subtitle">Manejo de stock simple y eficiente</p>
 				<a href="/login" class="hero-button">

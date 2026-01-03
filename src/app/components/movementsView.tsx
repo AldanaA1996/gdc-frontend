@@ -2,11 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/app/lib/supabaseClient";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/app/components/ui/dialog";
-import { Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/app/components/ui/dialog";
+import { 
+  Trash2, 
+  Activity, 
+  Filter, 
+  Loader2, 
+  AlertCircle,
+  User,
+  Users,
+  Calendar,
+  Package,
+  CheckSquare,
+  Square
+} from "lucide-react";
+import { Badge } from "@/app/components/ui/badge";
 
 type MovementRecord = Record<string, any> & {
-  id?: number | string;
+  id?:  number | string;
   created_at?: string;
   created_date?: string;
   activity_type?: string;
@@ -15,11 +28,11 @@ type MovementRecord = Record<string, any> & {
   quantity?: number;
   department_id?: number;
   user_id?: string;
-  volunteerd?: number;
+  volunteerd?:  number;
 };
 
 interface MovementsViewProps {
-  tableName?: string;
+  tableName?:  string;
   filterBy?: "tool" | "material";
 }
 
@@ -27,8 +40,8 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
   const [data, setData] = useState<MovementRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [inventoryById, setInventoryById] = useState<Record<string, { name?: string }>>({});
-  const [toolById, setToolById] = useState<Record<string, { name?: string }>>({});
+  const [inventoryById, setInventoryById] = useState<Record<string, { name?:  string }>>({});
+  const [toolById, setToolById] = useState<Record<string, { name?:  string }>>({});
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("");
@@ -45,7 +58,7 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
       try {
         const { data, error } = await supabase
           .from(tableName)
-          .select("id, material, tool, activity_type, created_at, created_date, quantity, user:user_creator (id,name, email),volunteer")
+          .select("id, material, tool, activity_type, created_at, created_date, quantity, user: user_creator (id,name, email),volunteer")
           .order("created_date", { ascending: false })
           .order("created_at", { ascending: false });
 
@@ -53,26 +66,25 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
         const rows = (data as MovementRecord[]) || [];
         setData(rows);
 
-        // Cargar nombres de tools e inventory
-        const toolIds = Array.from(new Set(rows.map((r) => r.tool).filter(Boolean))) as number[];
-        const materialIds = Array.from(new Set(rows.map((r) => r.material).filter(Boolean))) as number[];
+        const toolIds = Array.from(new Set(rows. map((r) => r.tool).filter(Boolean))) as number[];
+        const materialIds = Array.from(new Set(rows. map((r) => r.material).filter(Boolean))) as number[];
 
         if (toolIds.length) {
-          const { data: toolData } = await supabase.from("tools").select("id, name").in("id", toolIds);
-          const map: Record<string, { name?: string }> = {};
+          const { data: toolData } = await supabase. from("tools").select("id, name").in("id", toolIds);
+          const map:  Record<string, { name?: string }> = {};
           (toolData || []).forEach((t) => (map[String(t.id)] = { name: t.name }));
           setToolById(map);
         }
 
-        if (materialIds.length) {
-          const { data: invData } = await supabase.from("inventory").select("id, name").in("id", materialIds);
+        if (materialIds. length) {
+          const { data: invData } = await supabase. from("inventory").select("id, name").in("id", materialIds);
           const map: Record<string, { name?: string }> = {};
           (invData || []).forEach((i) => (map[String(i.id)] = { name: i.name }));
           setInventoryById(map);
         }
-      } catch (err: any) {
+      } catch (err:  any) {
         console.error("Error loading movements:", err);
-        setError(err?.message || "Error al cargar los movimientos");
+        setError(err?. message || "Error al cargar los movimientos");
       } finally {
         setLoading(false);
       }
@@ -82,14 +94,13 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
 
   useEffect(() => {
     const loadVolunteers = async () => {
-      const { data, error } = await supabase.from("volunteers").select("id, name");
+      const { data, error } = await supabase. from("volunteers").select("id, name");
       if (error) console.error("Error loading volunteers:", error);
       else setVolunteers(data || []);
     };
     loadVolunteers();
   }, []);
 
-  // Tipos de movimiento únicos
   const movementTypes = useMemo(() => {
     const set = new Set<string>();
     data.forEach((m) => {
@@ -99,9 +110,8 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
     return Array.from(set).sort();
   }, [data]);
 
-  // Filtros combinados
   const filtered = useMemo(() => {
-    if (!data.length) return [];
+    if (!data. length) return [];
 
     const from = fromDate ? new Date(fromDate + "T00:00:00") : null;
     const to = toDate ? new Date(toDate + "T23:59:59.999") : null;
@@ -116,16 +126,13 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
     };
 
     return data.filter((a) => {
-      // Filtro por fecha
       const when = getWhen(a);
       if (from && when && when < from) return false;
       if (to && when && when > to) return false;
 
-      // Filtro por tipo de actividad
-      const at = (a as any).activity_type ?? a.type;
+      const at = (a as any).activity_type ??  a.type;
       if (typeFilter && String(at) !== typeFilter) return false;
 
-      // Filtro por pestaña (tool / material)
       if (filterBy === "tool" && !a.tool) return false;
       if (filterBy === "material" && !a.material) return false;
 
@@ -133,9 +140,8 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
     });
   }, [data, fromDate, toDate, typeFilter, filterBy]);
 
-  // Modo eliminar
-  const toggleSelect = (id?: number | string) => {
-    if (!id) return;
+  const toggleSelect = (id?:  number | string) => {
+    if (! id) return;
     setSelectedIds((prev) => {
       const next = new Set(prev);
       const key = String(id);
@@ -145,13 +151,14 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
   };
 
   const clearSelection = () => setSelectedIds(new Set());
+  
   const requestDeleteSelected = () => {
-    if (!selectedIds.size) return;
+    if (! selectedIds.size) return;
     setConfirmIds(Array.from(selectedIds));
     setConfirmOpen(true);
   };
 
-  const requestDeleteSingle = (id?: number | string) => {
+  const requestDeleteSingle = (id?:  number | string) => {
     if (!id) return;
     setConfirmIds([String(id)]);
     setConfirmOpen(true);
@@ -161,7 +168,7 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
     if (!confirmIds.length) return;
     try {
       const idsForDb = confirmIds.map((x) => (isNaN(Number(x)) ? x : Number(x)));
-      const { error } = await supabase.from(tableName).delete().in("id", idsForDb);
+      const { error } = await supabase. from(tableName).delete().in("id", idsForDb);
       if (error) throw error;
       const toRemove = new Set(confirmIds);
       setData((prev) => prev.filter((r) => !toRemove.has(String(r.id))));
@@ -175,204 +182,298 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
     }
   };
 
-  if (loading) return <p className="p-4 text-center">Cargando movimientos...</p>;
-  if (error) return <p className="p-4 text-center text-red-500">{error}</p>;
-  if (!filtered.length) return <p className="p-4 text-center text-gray-500">No hay movimientos registrados.</p>;
-
-  return (
-    <div className="flex flex-col space-y-3 p-2 w-[95%] self-center h-full">
-      {/* Barra de filtros */}
-      <div className="sticky top-0 z-10 bg-white/70 backdrop-blur border rounded-md p-3 flex flex-wrap items-end gap-3">
-        <div>
-          <select className="border rounded h-9 px-2" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-            <option value="">Todos</option>
-            {movementTypes.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="ml-auto flex items-end gap-2">
-          {!deleteMode ? (
-            <button
-              type="button"
-              className="text-xs border rounded px-3 h-9 hover:bg-gray-50"
-              onClick={() => setDeleteMode(true)}
-            >
-              Modo eliminar
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="text-xs border rounded px-3 h-9 hover:bg-gray-50"
-                onClick={clearSelection}
-              >
-                Limpiar selección
-              </button>
-              <button
-                type="button"
-                className="text-xs border rounded px-3 h-9 bg-red-600 text-white hover:bg-red-500 disabled:opacity-50"
-                disabled={!selectedIds.size}
-                onClick={requestDeleteSelected}
-              >
-                Eliminar seleccionados ({selectedIds.size})
-              </button>
-              <button
-                type="button"
-                className="text-xs border rounded px-3 h-9 hover:bg-gray-50"
-                onClick={() => {
-                  setDeleteMode(false);
-                  clearSelection();
-                }}
-              >
-                Salir
-              </button>
-            </>
-          )}
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-sm text-gray-600">Cargando movimientos...</p>
         </div>
       </div>
+    );
+  }
 
-      {filtered.map((m) => {
-        const id = String(m.id ?? cryptoRandomId());
-        const movementType = (m as any).activity_type ?? (m as any).movementType ?? m.type;
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-3">
+          <AlertCircle className="h-12 w-12 text-red-500" />
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
-        const when = (() => {
-          const cd = m.created_date;
-          const ca = m.created_at;
-          
-          if (cd) {
-            // Parse como fecha local, no UTC
-            const dateStr = String(cd).replace('Z', '').trim();
+  if (! filtered.length) {
+    return (
+      <div className="px-4 pt-2 pb-24 md:pb-6">
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Activity className="h-5 w-5 text-blue-600" />
+            <h2 className="text-xl font-bold text-gray-800">Movimientos</h2>
+          </div>
+          <p className="text-xs text-gray-600">Registro de actividades del inventario</p>
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
+          <Activity className="h-12 w-12 text-gray-300" />
+          <p className="text-gray-500 text-sm">No hay movimientos registrados</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-2 sm:px-4 pt-2 pb-24 md:pb-6">
+      {/* Header */}
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Activity className="h-5 w-5 text-blue-600" />
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">Movimientos</h2>
+        </div>
+        <p className="text-xs text-gray-600">
+          {filtered.length} {filtered.length === 1 ? 'movimiento' : 'movimientos'}
+        </p>
+      </div>
+
+      {/* Barra de filtros - TODO EN UNA LÍNEA */}
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border border-gray-200 rounded-lg p-2 sm:p-3 mb-3 shadow-sm space-y-2">
+        {/* Primera línea:  Filtro y botón modo eliminar */}
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-gray-500 flex-shrink-0" />
+          <select 
+            className="flex-1 border border-gray-300 rounded-md px-2 py-1.5 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" 
+            value={typeFilter} 
+            onChange={(e) => setTypeFilter(e.target. value)}
+          >
+            <option value="">Todos los tipos</option>
+            {movementTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+
+          {! deleteMode && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteMode(true)}
+              className="text-xs h-8 px-2 sm:px-3 flex-shrink-0"
+            >
+              <Trash2 className="h-3. 5 w-3.5 sm:mr-1.5" />
+              <span className="hidden sm:inline">Modo eliminar</span>
+            </Button>
+          )}
+        </div>
+
+        {/* Segunda línea: Botones de eliminación (solo visible en modo eliminar) */}
+        {deleteMode && (
+          <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearSelection}
+              className="text-xs h-8 px-3 flex-1"
+            >
+              Limpiar selección
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={! selectedIds.size}
+              onClick={requestDeleteSelected}
+              className="text-xs h-8 px-3 flex-1"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              Eliminar ({selectedIds.size})
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setDeleteMode(false);
+                clearSelection();
+              }}
+              className="text-xs h-8 px-3"
+            >
+              Salir
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Lista de movimientos */}
+      <div className="space-y-2 sm:space-y-3">
+        {filtered.map((m) => {
+          const id = String(m.id ??  cryptoRandomId());
+          const movementType = (m as any).activity_type ?? (m as any).movementType ??  m.type;
+
+          const when = (() => {
+            const cd = m.created_date;
+            const ca = m.created_at;
             
-            // Intenta parsear formato: YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss
-            const parts = dateStr.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
-            if (parts) {
-              const [, year, month, day, hour, min, sec] = parts;
-              const d = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(min), Number(sec));
-              if (!isNaN(d.getTime())) {
-                return formatDateTimeLocal(d);
+            if (cd) {
+              const dateStr = String(cd).replace('Z', '').trim();
+              const parts = dateStr.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
+              if (parts) {
+                const [, year, month, day, hour, min, sec] = parts;
+                const d = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(min), Number(sec));
+                if (! isNaN(d.getTime())) {
+                  return formatDateTimeLocal(d);
+                }
               }
+              
+              const match2 = dateStr.match(/(\d{4})-(\d{2})-(\d{2})[T\s]? (\d{2}):(\d{2}):?(\d{2})?/);
+              if (match2) {
+                const [, year, month, day, hour, min, sec] = match2;
+                const d = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(min), Number(sec || 0));
+                if (!isNaN(d.getTime())) {
+                  return formatDateTimeLocal(d);
+                }
+              }
+              
+              return cd + (ca ? ` (${ca})` : "");
             }
             
-            // Fallback: formato más flexible (puede que falte segundos)
-            const match2 = dateStr.match(/(\d{4})-(\d{2})-(\d{2})[T\s]?(\d{2}):(\d{2}):?(\d{2})?/);
-            if (match2) {
-              const [, year, month, day, hour, min, sec] = match2;
-              const d = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(min), Number(sec || 0));
-              if (!isNaN(d.getTime())) {
-                return formatDateTimeLocal(d);
-              }
-            }
-            
-            // Si nada funciona, mostrar el valor raw de created_date con la hora
-            return cd + (ca ? ` (${ca})` : "");
-          }
-          
-          // Si solo hay hora, mostrarla
-          return ca ? `${ca}` : "";
-        })();
+            return ca ? `${ca}` : "";
+          })();
 
-        const materialName = m.material ? inventoryById[String(m.material)]?.name : undefined;
-        const toolName = m.tool ? toolById[String(m.tool)]?.name : undefined;
-        const itemName = materialName || toolName || "Movimiento";
+          const materialName = m.material ?  inventoryById[String(m. material)]?.name : undefined;
+          const toolName = m.tool ? toolById[String(m.tool)]?.name : undefined;
+          const itemName = materialName || toolName || "Movimiento";
 
-        const types: Record<string, { label: string; color: string }> = {
-          borrow: { label: "Préstamo", color: "bg-orange-100 text-orange-700" },
-          return: { label: "Devolución", color: "bg-green-100 text-green-700" },
-          entry: { label: "Entrada", color: "bg-blue-100 text-blue-700" },
-          exit: { label: "Salida", color: "bg-red-100 text-red-700" },
-          new: { label: "Nuevo", color: "bg-purple-100 text-purple-700" },
-          inuse: { label: "En uso", color: "bg-yellow-100 text-yellow-700" },
-        };
+          const types:  Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+            borrow: { label: "Préstamo", variant: "default" },
+            return: { label: "Devolución", variant: "secondary" },
+            entry: { label: "Entrada", variant: "outline" },
+            exit: { label: "Salida", variant:  "destructive" },
+            new: { label: "Nuevo", variant: "default" },
+            inuse: { label: "En uso", variant: "secondary" },
+          };
 
-        const typeDisplay = types[String(movementType).toLowerCase()] || {
-          label: movementType,
-          color: "bg-gray-100 text-gray-700",
-        };
+          const typeDisplay = types[String(movementType).toLowerCase()] || {
+            label: movementType,
+            variant: "outline" as const,
+          };
 
-        const qty = m.quantity ? (
-          <span className="text-xs rounded px-2 py-0.5 bg-blue-50 text-blue-700">{m.quantity}</span>
-        ) : null;
+          const user = (m as any).user?.name;
+          const volunteerName = m.volunteer ? volunteers.find(v => v.id === m.volunteer)?.name : null;
 
-        const user = (m as any).user?.name;
-        const volunteerName = m.volunteer ? volunteers.find(v => v.id === m.volunteer)?.name : null;
+          return (
+            <Card 
+              key={id} 
+              className={`p-3 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white ${
+                deleteMode && selectedIds.has(String(m.id)) ? 'ring-2 ring-blue-500' : ''
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                {/* Checkbox en modo eliminar */}
+                {deleteMode && (
+                  <button
+                    onClick={() => toggleSelect(m.id)}
+                    className="flex-shrink-0 mt-0.5"
+                  >
+                    {selectedIds.has(String(m.id)) ? (
+                      <CheckSquare className="h-5 w-5 text-blue-600" />
+                    ) : (
+                      <Square className="h-5 w-5 text-gray-400" />
+                    )}
+                  </button>
+                )}
 
-        return (
-          <Card key={id} className="p-3 w-full border border-gray-200 shadow-sm hover:shadow-md transition-all duration-150 rounded-xl bg-white">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-[200px]">
-                <div className="flex items-center gap-2 ">
-                  <span className="font-semibold">{itemName}</span>
-                  {typeDisplay.label && (
-                    <span className={`text-xs rounded px-2 py-0.5 font-medium ${typeDisplay.color}`}>
+                {/* Contenido principal */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  {/* Línea 1: Nombre del item */}
+                  <div className="flex items-start gap-2">
+                    <Package className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                    <span className="font-semibold text-sm text-gray-800 break-words line-clamp-2">
+                      {itemName}
+                    </span>
+                  </div>
+
+                  {/* Línea 2: Badges */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Badge variant={typeDisplay.variant} className="text-xs">
                       {typeDisplay.label}
-                    </span>
-                  )}
-                  {qty}
-                </div>
-                               
-                   <div className="text-xs text-gray-500 mt-1 grid grid-cols-1 md:grid-cols-2 gap-1">
-                  {volunteerName && (
-                    <span>
-                      Voluntario: <span className="font-medium">{volunteerName}</span>
-                    </span>
-                  )}
-                  {user && (
-                    <span>
-                      Creado por: <span className="font-medium">{user}</span>
-                    </span>
-                  )}
-                </div> 
-                {when && <span className="text-xs text-gray-500 mt-1">{when}</span>}
-              </div>
+                    </Badge>
+                    {m.quantity && (
+                      <Badge variant="outline" className="text-xs">
+                        {m.quantity}
+                      </Badge>
+                    )}
+                  </div>
 
-              {!deleteMode && (
-                <div className="ml-auto pl-2">
-                  <Button variant="destructive" size="sm" onClick={() => requestDeleteSingle(m.id)}>
+                  {/* Línea 3: Info adicional */}
+                  <div className="space-y-1 text-xs text-gray-600">
+                    {when && (
+                      <div className="flex items-center gap-1. 5">
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{when}</span>
+                      </div>
+                    )}
+                    {user && (
+                      <div className="flex items-center gap-1.5">
+                        <User className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{user}</span>
+                      </div>
+                    )}
+                    {volunteerName && (
+                      <div className="flex items-center gap-1.5">
+                        <Users className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{volunteerName}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Botón eliminar individual */}
+                {! deleteMode && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => requestDeleteSingle(m.id)}
+                    className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 flex-shrink-0"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
-              )}
-              {deleteMode && (
-                <div className="ml-auto pl-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(String(m.id))}
-                      onChange={() => toggleSelect(m.id)}
-                    />
-                    <span className="text-xs">Seleccionar</span>
-                  </label>
-                </div>
-              )}
-            </div>
-          </Card>
-        );
-      })}
+                )}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
 
+      {/* Modal de confirmación */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[90vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirmar eliminación</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+              Confirmar eliminación
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm">
-              {confirmIds.length > 1
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              {confirmIds. length > 1
                 ? `Vas a eliminar ${confirmIds.length} movimientos. Esta acción no se puede deshacer.`
                 : `Vas a eliminar 1 movimiento. Esta acción no se puede deshacer.`}
             </p>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-                Cancelar
-              </Button>
-              <Button variant="destructive" onClick={confirmDelete}>
-                Eliminar
-              </Button>
-            </div>
           </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setConfirmOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              className="w-full sm:w-auto"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Eliminar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -380,7 +481,6 @@ export default function MovementsView({ tableName = "activity", filterBy }: Move
 }
 
 function formatDateTimeLocal(d: Date) {
-  // Formato: DD/MM/YYYY HH:mm:ss (24 horas) para objeto Date ya creado como local
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();

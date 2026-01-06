@@ -13,6 +13,7 @@ import {
   Drill,
   Barcode,
   Scan,
+  Factory,
   X
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
@@ -26,7 +27,7 @@ import BarcodeScanner from '@/app/components/BarcodeScanner';
 
 const schema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
-  quantity: z.number().min(1, 'La cantidad es requerida'),
+  // quantity: z.number().min(1, 'La cantidad es requerida'),
   buyDate: z.preprocess(
     (arg) => (typeof arg === 'string' ? new Date(arg) : arg),
     z.date()
@@ -37,18 +38,20 @@ const schema = z.object({
   ),
   department_id: z.number().min(1, 'El departamento es requerido'),
   description: z.string().optional(),
-  barcode: z.string().optional()
+  barcode: z.string().optional(),
+  brand: z.string().optional()
 });
 
 type Tool = {
   id: number;
   name: string;
-  quantity:  number;
+  // quantity:  number;
   purchase_date?:  string;
   warranty_expirationdate?: string;
   department_id?:  number;
   description?: string;
   barcode?: string;
+  brand?: string;
 };
 
 type Department = {
@@ -103,7 +106,7 @@ function AddToolForm() {
       setToolsLoading(true);
       const { data, error } = await supabase
         .from('tools')
-        .select('id, name, quantity, purchase_date, warranty_expirationdate, department_id, description, barcode');
+        .select('id, name, purchase_date, warranty_expirationdate, department_id, description, barcode, brand');
 
       if (error) {
         console.error("Error al cargar herramientas:", error);
@@ -141,12 +144,13 @@ function AddToolForm() {
     resolver:  zodResolver(schema) as any,
     defaultValues: {
       name: '',
-      quantity:  1,
+      
       buyDate:  new Date(),
       warranty: new Date(),
       department_id:  0,
       description: '',
       barcode: '',
+      brand: '',
     },
   });
 
@@ -158,7 +162,7 @@ function AddToolForm() {
         .insert([
           {
             name: values. name. trim(),
-            quantity: values. quantity,
+            
             purchase_date:  values.buyDate.toISOString(),
             warranty_expirationdate: values.warranty?.toISOString(),
             department_id: values.department_id,
@@ -167,6 +171,7 @@ function AddToolForm() {
               : null,
             barcode: values.barcode?. trim() || null,
             created_at: new Date().toISOString(),
+            brand: values.brand?.trim() || null,
           },
         ])
         .select()
@@ -182,16 +187,17 @@ function AddToolForm() {
         {
           tool: toolData. id,
           activity_type: 'new',
-          quantity: values.quantity,
+          quantity: 1,
           created_by: user?.id,
           created_at: horaActual,
           created_date: new Date().toISOString(),
+          user_creator: dbUserId,
         },
       ]);
 
       const { data: updatedTools } = await supabase
         . from('tools')
-        .select('id, name, quantity, purchase_date, warranty_expirationdate, department_id, description, barcode');
+        .select('id, name, purchase_date, warranty_expirationdate, department_id, description, barcode, brand');
 
       setTools((updatedTools as Tool[]) || []);
 
@@ -275,6 +281,20 @@ function AddToolForm() {
           )}
         </div>
 
+        {/* brand */}
+        <div>
+          <Label htmlFor="brand" className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+            <Factory className="h-3.5 w-3.5" />
+            Marca (opcional)
+          </Label>
+          <Input
+            id="brand"
+            {...form.register("brand")}
+            placeholder="Ingrese la marca de la herramienta"
+            className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+          />
+        </div>
+
         {/* Código de Barras */}
         <div className="space-y-1.5">
           <Label htmlFor="barcode" className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
@@ -330,7 +350,7 @@ function AddToolForm() {
 
         {/* Cantidad y Fecha de Compra */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          {/* <div className="space-y-1.5">
             <Label htmlFor="quantity" className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
               <Wrench className="h-3.5 w-3.5" />
               Cantidad *
@@ -348,7 +368,7 @@ function AddToolForm() {
                 <span>{form.formState.errors.quantity.message}</span>
               </div>
             )}
-          </div>
+          </div> */}
 
           <div className="space-y-1.5">
             <Label htmlFor="buyDate" className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
@@ -368,9 +388,7 @@ function AddToolForm() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Garantía */}
+             {/* Garantía */}
         <div className="space-y-1.5">
           <Label htmlFor="warranty" className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
             <Shield className="h-3.5 w-3.5" />
@@ -389,6 +407,9 @@ function AddToolForm() {
             </div>
           )}
         </div>
+        </div>
+
+       
 
         {/* Descripción */}
         <div className="space-y-1.5">

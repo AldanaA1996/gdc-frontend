@@ -73,7 +73,7 @@ export function useBarcodeScanner(config: ScannerConfig = {}) {
     typeof navigator !== 'undefined' ? navigator. userAgent : ''
   );
 
-  // 🔥 Sincronizar state con refs
+  // Sincronizar state con refs
   useEffect(() => {
     runningRef.current = running;
   }, [running]);
@@ -82,7 +82,7 @@ export function useBarcodeScanner(config: ScannerConfig = {}) {
     scanningRef.current = scanning;
   }, [scanning]);
 
-  // 🔊 Inicializar audio context
+  // Inicializar audio context
   useEffect(() => {
     if (typeof window !== 'undefined' && soundEnabled) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -92,7 +92,7 @@ export function useBarcodeScanner(config: ScannerConfig = {}) {
     };
   }, [soundEnabled]);
 
-  // 🔊 Reproducir beep
+  // Reproducir beep
   const playSuccessBeep = useCallback(() => {
     if (!soundEnabled || !audioContextRef.current) return;
     
@@ -116,14 +116,14 @@ export function useBarcodeScanner(config: ScannerConfig = {}) {
     }
   }, [soundEnabled]);
 
-  // 📳 Vibración
+  // Vibración
   const vibrate = useCallback(() => {
     if (typeof navigator !== 'undefined' && navigator. vibrate) {
       navigator.vibrate(100);
     }
   }, []);
 
-  // 📷 Refrescar dispositivos
+  // Refrescar dispositivos
   const refreshDevices = useCallback(async () => {
     try {
       const mediaDevices = await navigator.mediaDevices.enumerateDevices();
@@ -141,21 +141,19 @@ export function useBarcodeScanner(config: ScannerConfig = {}) {
     }
   }, [selectedDeviceId]);
 
-  // 🧹 Limpiar stream
- // hooks/use-barcode-scanner. ts
-// Reemplaza la función cleanupStream: 
+  // Limpiar stream
 
 const cleanupStream = useCallback(() => {
-  console.log('🧹 Cleanup stream llamado');
+  
   
   if (pauseTimeoutRef.current) {
     clearTimeout(pauseTimeoutRef. current);
     pauseTimeoutRef.current = null;
   }
 
-  // 🔥 NO detener controles ni stream aquí si está corriendo
+  // NO detener controles ni stream aquí si está corriendo
   if (runningRef.current) {
-    console.log('⚠️ Scanner corriendo, NO limpiando stream');
+   
     return;
   }
 
@@ -183,8 +181,6 @@ const cleanupStream = useCallback(() => {
 
   // 🛑 Detener scanner
  const stop = useCallback(() => {
-  console.log('🛑 Deteniendo scanner...');
-  
   setRunning(false);
   setScanning(false);
   runningRef.current = false;
@@ -193,7 +189,7 @@ const cleanupStream = useCallback(() => {
   // Detener controles de ZXing PRIMERO
   if (zxingControlsRef.current) {
     try {
-      console.log('🛑 Deteniendo controles ZXing');
+      
       zxingControlsRef.current.stop?. ();
     } catch (e) {
       console.warn('Error deteniendo controles:', e);
@@ -204,7 +200,6 @@ const cleanupStream = useCallback(() => {
   // Resetear reader
   if (zxingReaderRef.current) {
     try {
-      console.log('🛑 Reseteando reader');
       zxingReaderRef.current.reset?.();
     } catch (e) {
       console.warn('Error reseteando reader:', e);
@@ -214,7 +209,7 @@ const cleanupStream = useCallback(() => {
 
   // Detener stream
   if (stream) {
-    console.log('🛑 Deteniendo stream');
+    
     stream.getTracks().forEach((t) => {
       console.log('Deteniendo track:', t.label);
       t.stop();
@@ -267,11 +262,11 @@ const cleanupStream = useCallback(() => {
     }
 
     if (! code || code. length < 3) {
-      console.log('❌ Código inválido o muy corto');
+      
       return;
     }
 
-    console. log('✅ Código válido, procesando.. .');
+    
 
     lastScanTimeRef.current = now;
     lastCodeRef.current = code;
@@ -286,24 +281,18 @@ const cleanupStream = useCallback(() => {
     playSuccessBeep();
     vibrate();
 
-    console.log('📞 Llamando onDetected callback.. .');
+    
     onDetected?.({ rawValue: code, format });
-    console.log('✅ onDetected callback ejecutado');
+   
 
     if (autoResetAfterScan) {
-      console.log('⏰ Pausando scanner por', scanDelay, 'ms');
+      
       pauseScanning(scanDelay);
     }
   }, [onDetected, playSuccessBeep, vibrate, autoResetAfterScan, scanDelay, pauseScanning, showLastCode]);
 
-  // 🎥 Iniciar ZXing
- // hooks/use-barcode-scanner. ts
-// Reemplaza la función startZxing completa: 
-
 const startZxing = useCallback(async (useId?:  string) => {
-  console.log('🎥 ========== INICIANDO ZXING ==========');
-  console.log('📹 Device ID:', useId);
-  
+   
   try {
     setError(null);
     setRunning(true);
@@ -311,13 +300,13 @@ const startZxing = useCallback(async (useId?:  string) => {
     runningRef.current = true;
     scanningRef.current = true;
     
-    console.log('📦 Importando ZXing...');
+    
     const mod:  any = await import("@zxing/browser");
     const { BrowserMultiFormatReader, BarcodeFormat } = mod;
-    console.log('✅ ZXing importado');
+    
     
     // Crear reader SIN hints para mejor compatibilidad
-    console.log('🔧 Creando reader');
+   
     const reader: any = new BrowserMultiFormatReader();
     
     zxingReaderRef.current = reader;
@@ -326,8 +315,8 @@ const startZxing = useCallback(async (useId?:  string) => {
       throw new Error('Video element no disponible');
     }
 
-    console.log('🎬 Iniciando decodeFromVideoDevice.. .');
-    console.log('📺 Video element:', videoRef.current);
+    // console.log('🎬 Iniciando decodeFromVideoDevice.. .');
+    // console.log('📺 Video element:', videoRef.current);
 
     // 🔥 CRÍTICO: NO usar await aquí, la función es continua
     reader.decodeFromVideoDevice(
@@ -336,35 +325,35 @@ const startZxing = useCallback(async (useId?:  string) => {
       (result: any, err: any, controls: any) => {
         // Guardar controles en la primera llamada
         if (controls && ! zxingControlsRef.current) {
-          console.log('💾 Guardando controles');
+         
           zxingControlsRef.current = controls;
         }
 
         // Log cada vez que se ejecuta (incluso sin resultado)
         if (result) {
-          console.log('🔔 ========== CÓDIGO DETECTADO ==========');
-          console.log('📊 runningRef.current:', runningRef.current);
-          console.log('📊 scanningRef. current:', scanningRef.current);
-          console.log('📦 result:', result);
+          
+          // console.log('📊 runningRef.current:', runningRef.current);
+          // console.log('📊 scanningRef. current:', scanningRef.current);
+          // console.log('📦 result:', result);
           
           if (! runningRef.current || !scanningRef.current) {
-            console.log('⏸️ Scanner no activo, ignorando');
+            // console.log('⏸️ Scanner no activo, ignorando');
             return;
           }
           
           const text = result.getText?.() ?? String(result);
-          console. log('✅ Texto detectado:', text);
+         
           
           if (text) {
             const format = result.getBarcodeFormat?. ()?.toString();
-            console.log('📞 Llamando handleDetection');
+            // console.log('📞 Llamando handleDetection');
             handleDetection(text, format);
           }
         }
       }
     );
 
-    console.log('⏰ Esperando inicialización del stream...');
+   
 
     // Esperar a que el stream esté disponible
     let attempts = 0;
@@ -377,7 +366,7 @@ const startZxing = useCallback(async (useId?:  string) => {
           const ms = videoRef.current?.srcObject as MediaStream;
           
           if (ms && ms.active) {
-            console.log('✅ Stream obtenido en intento', attempts);
+            // console.log('✅ Stream obtenido en intento', attempts);
             resolve(ms);
           } else if (attempts >= maxAttempts) {
             console. warn('⚠️ No se pudo obtener stream después de', maxAttempts, 'intentos');
@@ -394,24 +383,24 @@ const startZxing = useCallback(async (useId?:  string) => {
     
     if (ms) {
       setStream(ms);
-      console.log('📹 Stream configurado');
-      console.log('🎥 Video tracks:', ms.getVideoTracks().length);
-      console.log('🎬 Stream activo:', ms.active);
+      // console.log('📹 Stream configurado');
+      // console.log('🎥 Video tracks:', ms.getVideoTracks().length);
+      // console.log('🎬 Stream activo:', ms.active);
 
       // Configurar track
       try {
         const track = ms.getVideoTracks()[0];
         if (track) {
-          console.log('🎬 Track:', track.label);
-          console. log('📊 Track state:', track.readyState);
-          console.log('📊 Track enabled:', track.enabled);
+          // console.log('🎬 Track:', track.label);
+          // console. log('📊 Track state:', track.readyState);
+          // console.log('📊 Track enabled:', track.enabled);
 
           const capabilities: any = (track as any).getCapabilities?.();
           if (capabilities) {
-            console.log('🎛️ Capabilities:', Object.keys(capabilities));
+            // console.log('🎛️ Capabilities:', Object.keys(capabilities));
             const canTorch = !!capabilities. torch;
             setTorchSupported(canTorch);
-            console.log('💡 Torch soportado:', canTorch);
+            
           }
         }
       } catch (err) {
@@ -422,7 +411,7 @@ const startZxing = useCallback(async (useId?:  string) => {
       throw new Error('No se pudo obtener acceso a la cámara');
     }
 
-    console.log('🎉 ========== ZXING INICIADO EXITOSAMENTE ==========');
+
 
   } catch (e: any) {
     console.error('❌ ========== ERROR EN ZXING ==========');
@@ -435,7 +424,7 @@ const startZxing = useCallback(async (useId?:  string) => {
   }
 }, [handleDetection]);
 
-  // ▶️ Iniciar scanner
+  // Iniciar scanner
   const start = useCallback(async () => {
     setError(null);
     setShowCameraSelect(false);
@@ -469,7 +458,7 @@ const startZxing = useCallback(async (useId?:  string) => {
     }
   }, [selectedDeviceId, devices, refreshDevices, startZxing]);
 
-  // 🔦 Toggle linterna
+  // Toggle linterna
   const toggleTorch = useCallback(async () => {
     try {
       const ms = videoRef.current?.srcObject as MediaStream | null;
@@ -486,7 +475,7 @@ const startZxing = useCallback(async (useId?:  string) => {
     }
   }, [torchOn]);
 
-  // 🔄 Reset manual
+  // Reset manual
   const resetScanner = useCallback(() => {
     lastCodeRef.current = "";
     setLastCode("");

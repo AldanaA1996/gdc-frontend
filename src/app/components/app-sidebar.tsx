@@ -64,7 +64,6 @@ const items = [
     url: "/app/volunteers",
     icon: UsersRound,
   },
-  
   {
     title: "Información",
     url: "/app/info",

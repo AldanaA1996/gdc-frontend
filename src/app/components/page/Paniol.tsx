@@ -4,19 +4,24 @@ import { useState, useEffect, useCallback } from "react";
 import BarcodeScanner from "../BarcodeScanner";
 import EgressTool from "../egressTool";
 import ReturnTool from "../ingressTool";
+import ToolStatistics from "../ToolsStatistics";
 import { useToolByBarcode } from "../../hooks/use-toolByBarcode";
 import { toast } from "sonner";
-import { X, ScanLine } from "lucide-react";
+import { X, ScanLine, Package, ChevronRight, BarChart3 } from "lucide-react";
 import { supabase } from "@/app/lib/supabaseClient";
 import Layout from "../layout";
+import ToolsInUse from "../toolsInUse";
 
 export default function ToolManagementPage() {
   const [showScanner, setShowScanner] = useState(true);
+  const [showStats, setShowStats] = useState(false);
   const [activeTab, setActiveTab] = useState<"egress" | "return">("egress");
   const [scannedTool, setScannedTool] = useState<any | null>(null);
   const [resetTrigger, setResetTrigger] = useState(0);
   const [toolsInUseCount, setToolsInUseCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showToolsInUseModal, setShowToolsInUseModal] = useState(false);
+  
   
   const { findToolByBarcode, loading:  searchingTool } = useToolByBarcode();
 
@@ -119,7 +124,7 @@ export default function ToolManagementPage() {
   }, [scannedTool]);
 
   const handleToolProcessed = useCallback(() => {
-    console.log('✅ ========== TOOL PROCESSED ==========');
+   
     setScannedTool(null);
     setResetTrigger(prev => prev + 1);
     fetchToolsInUse();
@@ -127,8 +132,7 @@ export default function ToolManagementPage() {
   }, [fetchToolsInUse]);
 
   const handleTabChange = useCallback((tab: "egress" | "return") => {
-    console.log('🔄 ========== CAMBIO DE TAB ==========');
-    console.log('De:', activeTab, '-> A:', tab);
+   
     setActiveTab(tab);
     setScannedTool(null);
     setResetTrigger(prev => prev + 1);
@@ -268,9 +272,12 @@ export default function ToolManagementPage() {
             />
           )}
         </div>
-         <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg shadow-sm">
+       <button
+          onClick={() => setShowToolsInUseModal(true)}
+          className="mb-4 mt-4 w-full p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 transition-all group cursor-pointer"
+        >
           <div className="flex items-center justify-between">
-            <div>
+            <div className="text-left">
               <p className="text-sm text-blue-600 font-medium mb-1">
                 Estado del inventario
               </p>
@@ -281,11 +288,81 @@ export default function ToolManagementPage() {
                 actualmente en uso
               </p>
             </div>
-            <div className="text-5xl">
-              📊
+            <div className="flex items-center gap-2">
+              <div className="text-5xl">
+                📊
+              </div>
+              <ChevronRight className="h-6 w-6 text-blue-600 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
+        </button>
+
+        
+        {/* Botón para mostrar/ocultar estadísticas */}
+        <div className="mb-4">
+          <button
+            onClick={() => setShowStats(!showStats)}
+            className="w-full p-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+          >
+            <BarChart3 className="h-5 w-5" />
+            <span className="font-semibold">
+              {showStats ? 'Ocultar Estadísticas' : 'Ver Estadísticas'}
+            </span>
+          </button>
         </div>
+
+        {/* Estadísticas */}
+        {showStats && (
+          <div className="mb-6">
+            <ToolStatistics />
+          </div>
+        )}  
+
+        {/* 🆕 MODAL CON HERRAMIENTAS EN USO */}
+        {showToolsInUseModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+              {/* Header del modal */}
+              <div className="bg-linear-to-r from-blue-600 to-indigo-600 p-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white/20 rounded-full">
+                    <Package className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">
+                      Herramientas en Uso
+                    </h2>
+                    <p className="text-blue-100 text-sm">
+                      {toolsInUseCount} {toolsInUseCount === 1 ? 'herramienta activa' : 'herramientas activas'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowToolsInUseModal(false)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  aria-label="Cerrar"
+                >
+                  <X className="h-6 w-6 text-white" />
+                </button>
+              </div>
+
+              {/* Contenido del modal */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <ToolsInUse onToolUpdate={fetchToolsInUse} />
+              </div>
+
+              {/* Footer del modal */}
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <button
+                  onClick={() => setShowToolsInUseModal(false)}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </Layout>

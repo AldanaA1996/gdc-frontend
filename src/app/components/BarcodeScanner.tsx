@@ -18,24 +18,17 @@ import { useBarcodeScanner } from "@/app/hooks/use-barcode-scanner";
 import type { ScannerConfig } from "@/app/hooks/use-barcode-scanner";
 
 export default function BarcodeScanner(config: ScannerConfig) {
-  // 🔥 Log para verificar que recibe la prop
-  console.log('🎬 BarcodeScanner renderizado con config:', {
-    hasOnDetected: !!config.onDetected,
-    autoStart: config.autoStart,
-    scanDelay: config.scanDelay,
-  });
 
   const { videoRef, state, actions, isMobile } = useBarcodeScanner(config);
 
-  // 🔥 Log cuando cambia el estado
-  React.useEffect(() => {
-    console.log('📊 Estado del scanner:', {
-      running: state.running,
-      scanning: state.scanning,
-      lastCode: state.lastCode,
-      scanCount: state.scanCount,
-    });
-  }, [state.running, state.scanning, state.lastCode, state.scanCount]);
+  // React.useEffect(() => {
+  //   console.log('📊 Estado del scanner:', {
+  //     running: state.running,
+  //     scanning: state.scanning,
+  //     lastCode: state.lastCode,
+  //     scanCount: state.scanCount,
+  //   });
+  // }, [state.running, state.scanning, state.lastCode, state.scanCount]);
 
   return (
     <div className="pb-2">

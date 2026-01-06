@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+// hooks/use-tool-search.ts
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 import type { Tool } from "../components/egressTool";
 
@@ -9,25 +10,54 @@ export const useSearch = () => {
 
   useEffect(() => {
     const fetchTools = async () => {
-      if (!searchTerm) {
+      // 🔥 Si no hay término de búsqueda, limpiar resultados
+      if (! searchTerm || searchTerm.trim().length === 0) {
         setTools([]);
+        setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from("tools")
-        .select("*")
-        .ilike("name", `%${searchTerm}%`)
-        .limit(10);
+      
+      try {
+        const { data, error } = await supabase
+          .from("tools")
+          .select("*")
+          .ilike("name", `%${searchTerm}%`)
+          .eq("inUse", false) // 🔥 Solo herramientas disponibles
+          .limit(10);
 
-      if (!error) setTools(data || []);
-      setIsLoading(false);
+        if (error) {
+          console.error("Error buscando herramientas:", error);
+          setTools([]);
+        } else {
+          setTools(data || []);
+        }
+      } catch (err) {
+        console.error("Error en búsqueda:", err);
+        setTools([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
+    // Debounce de 400ms
     const delay = setTimeout(fetchTools, 400);
     return () => clearTimeout(delay);
   }, [searchTerm]);
 
-  return { tools, setTools, searchTerm, setSearchTerm, isLoading };
+  // 🔥 Función para limpiar la búsqueda
+  const clearSearch = useCallback(() => {
+    setSearchTerm("");
+    setTools([]);
+  }, []);
+
+  return { 
+    tools, 
+    setTools, 
+    searchTerm, 
+    setSearchTerm, 
+    isLoading,
+    clearSearch // 🔥 Nueva función
+  };
 };

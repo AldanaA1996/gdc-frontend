@@ -22,7 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/componen
 import { supabase } from '../lib/supabaseClient';
 import { useAuthenticationStore } from '../store/authentication';
 import { toast } from 'sonner';
-import BarcodeScanner from '@/app/components/scanner';
+import BarcodeScanner from '@/app/components/BarcodeScanner';
 
 const schema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),

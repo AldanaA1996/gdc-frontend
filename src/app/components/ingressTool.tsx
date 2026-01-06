@@ -26,11 +26,12 @@ export type Tool = {
   id: string;
   name: string;
   inUse: boolean;
-  condition:  string;
+  condition: string;
+  barcode?:  string; // 🆕 Agregar barcode opcional
 };
 
 interface ReturnToolProps {
-  onToolUpdate?:  () => void;
+  onToolUpdate?: () => void;
   scannedTool?: Tool | null;
   onToolProcessed?: () => void;
 }
@@ -54,31 +55,46 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
 
   // 🔥 Efecto corregido para manejar herramienta escaneada
   useEffect(() => {
-    if (scannedTool && scannedTool.id) {
-      console.log('Herramienta escaneada recibida (Ingreso):', scannedTool);
-      
-      // Validar que la herramienta esté en uso
-      if (! scannedTool.inUse) {
-        toast.error(`La herramienta "${scannedTool.name}" no está en uso`);
-        if (onToolProcessed) onToolProcessed();
-        return;
-      }
-
-      // Seleccionar la herramienta
-      setSelectedTool(scannedTool);
-      form.setValue("toolId", scannedTool.id, { shouldValidate: true });
-      setSearchTerm(scannedTool. name);
-      setTools([]);
-      
-      console.log('Herramienta seleccionada para ingreso:', scannedTool.name);
+    // Solo procesar si hay una herramienta escaneada válida
+    if (! scannedTool || ! scannedTool.id) {
+      return;
     }
-  }, [scannedTool?. id]); // 🔥 Dependencia correcta
+
+    console.log('🔍 Herramienta escaneada recibida (Ingreso):', scannedTool);
+    
+    // Validar que la herramienta esté en uso
+    if (!scannedTool.inUse) {
+      console.warn('⚠️ Herramienta no está en uso:', scannedTool.name);
+      toast.error(`La herramienta "${scannedTool.name}" no está en uso`);
+      if (onToolProcessed) onToolProcessed();
+      return;
+    }
+
+    // Seleccionar la herramienta automáticamente
+    console.log('✅ Seleccionando herramienta para ingreso:', scannedTool. name);
+    handleSelectTool(scannedTool);
+    
+  }, [scannedTool]); // 🔥 Dependencia del objeto completo
+
+  // 🔥 Función separada para manejar selección
+  const handleSelectTool = (tool: Tool) => {
+    if (!tool.inUse) {
+      console.warn('⚠️ Intentando seleccionar herramienta no disponible');
+      return;
+    }
+
+    console.log('📋 Seleccionando herramienta:', tool);
+    setSelectedTool(tool);
+    form.setValue("toolId", tool.id, { shouldValidate: true });
+    setSearchTerm(tool.name);
+    setTools([]);
+  };
 
   const getDbUserId = async (): Promise<number | null> => {
     if (!user?. id) return null;
 
     const { data: dbUser, error } = await supabase
-      .from("user")
+      . from("user")
       .select("id")
       .eq("userAuth", user.id)
       .maybeSingle();
@@ -114,11 +130,13 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
       const userCreatorId = await getDbUserId();
       if (!userCreatorId) throw new Error("No se pudo obtener el usuario creador");
 
+      console.log('💾 Guardando devolución de herramienta:', selectedTool.id);
+
       // 1️⃣ Actualizar herramienta como disponible
-      const { error: updateError } = await supabase
+      const { error:  updateError } = await supabase
         .from("tools")
         .update({ inUse: false })
-        .eq("id", selectedTool.id);
+        .eq("id", selectedTool. id);
       if (updateError) throw updateError;
 
       // 2️⃣ Registrar devolución en activity
@@ -133,7 +151,7 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
         now
           .toLocaleDateString("es-AR", {
             year: "numeric",
-            month: "2-digit",
+            month:  "2-digit",
             day: "2-digit",
           })
           .split("/")
@@ -142,7 +160,7 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
         "T" +
         horaActual;
 
-      const { error:  activityError } = await supabase. from("activity").insert([
+      const { error: activityError } = await supabase. from("activity").insert([
         {
           tool:  selectedTool.id,
           activity_type: "return",
@@ -150,10 +168,12 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
           created_by: user?.id ?? null,
           created_at: horaActual,
           created_date: fechaActual,
-          volunteer: selectedVolunteer?. id || null,
+          volunteer: selectedVolunteer?.id || null,
         },
       ]);
       if (activityError) throw activityError;
+
+      console.log('✅ Devolución registrada exitosamente');
 
       // 3️⃣ Resetear formulario y estado
       form.reset();
@@ -170,21 +190,13 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
       if (onToolUpdate) onToolUpdate();
       if (onToolProcessed) onToolProcessed();
     } catch (err:  any) {
-      console.error("Error al devolver la herramienta:", err);
+      console.error("❌ Error al devolver la herramienta:", err);
       setError("Ocurrió un error al registrar la devolución.");
       toast.error("Error al registrar la devolución");
     }
   };
 
-  const handleSelectTool = (tool:  Tool) => {
-    if (!tool.inUse) return;
-    setSelectedTool(tool);
-    form.setValue("toolId", tool.id, { shouldValidate: true });
-    setSearchTerm(tool.name);
-    setTools([]);
-  };
-
-  const handleSelectVolunteer = (volunteer: any) => {
+  const handleSelectVolunteer = (volunteer:  any) => {
     setSelectedVolunteer(volunteer);
     form.setValue("volunteerId", volunteer.id, { shouldValidate: true });
     setVolunteerSearchTerm(`${volunteer.name} ${volunteer. surname}`);
@@ -195,6 +207,15 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
     const formData = form.getValues();
     onSubmit(formData);
   };
+
+  // 🆕 Log para debugging
+  useEffect(() => {
+    console.log('🔄 Estado actual ReturnTool:', {
+      scannedTool:  scannedTool?.name,
+      selectedTool: selectedTool?.name,
+      inUse: scannedTool?.inUse
+    });
+  }, [scannedTool, selectedTool]);
 
   return (
     <div className="mb-6">
@@ -221,7 +242,7 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 if (selectedTool) setSelectedTool(null);
-                form.setValue("toolId", "", { shouldValidate: true });
+                form. setValue("toolId", "", { shouldValidate: true });
               }}
               placeholder="Escribí el nombre o escaneá el código arriba..."
               autoComplete="off"
@@ -230,12 +251,12 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
 
-          {tools.length > 0 && (
+          {tools.length > 0 && ! selectedTool && (
             <ul className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-xl mt-2 max-h-64 overflow-y-auto">
-              {tools.map((tool: Tool) => (
+              {tools.map((tool:  Tool) => (
                 <li
                   key={tool.id}
-                  className={`px-4 py-3 transition-colors border-b border-gray-100 last:border-b-0 first:rounded-t-lg last:rounded-b-lg ${
+                  className={`px-4 py-3 transition-colors border-b border-gray-100 last:border-b-0 first:rounded-t-lg last: rounded-b-lg ${
                     ! tool.inUse ?  "text-gray-400 bg-gray-50 cursor-not-allowed" : "hover:bg-blue-50 cursor-pointer"
                   }`}
                   onClick={() => tool.inUse && handleSelectTool(tool)}
@@ -246,7 +267,7 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
                       <p className="font-medium text-gray-800">{tool.name}</p>
                     </div>
                     <Badge variant="secondary" className={! tool.inUse ? "bg-gray-100 text-gray-500" : ""}>
-                      {tool.inUse ? "En uso" :  "Disponible"}
+                      {tool.inUse ? "En uso" : "Disponible"}
                     </Badge>
                   </div>
                 </li>
@@ -264,12 +285,17 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
 
         {/* Herramienta seleccionada */}
         {selectedTool && (
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 shadow-sm">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-start gap-3">
               <Wrench className="h-5 w-5 text-green-700 mt-0.5 flex-shrink-0" />
               <div className="space-y-1.5 flex-1">
                 <p className="text-sm font-semibold text-gray-700">Herramienta Seleccionada</p>
                 <p className="text-base font-bold text-gray-900">{selectedTool. name}</p>
+                {selectedTool.barcode && (
+                  <p className="text-xs text-gray-600 font-mono">
+                    Código:  {selectedTool.barcode}
+                  </p>
+                )}
                 <div className="flex items-center gap-2 pt-2 border-t border-green-200">
                   <Badge variant="outline" className="bg-white border-green-300 text-green-700 font-semibold">
                     Estado: {selectedTool.inUse ? "En uso" : "Disponible"}
@@ -296,7 +322,7 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
               }}
               placeholder="Escribí el nombre del voluntario..."
               autoComplete="off"
-              className="pl-10 pr-4 py-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus: ring-blue-200 transition-all"
+              className="pl-10 pr-4 py-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
             />
             <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
@@ -306,7 +332,7 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
               {volunteers.map((volunteer) => (
                 <li
                   key={volunteer.id}
-                  className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last: border-b-0 first: rounded-t-lg last:rounded-b-lg"
+                  className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 first:rounded-t-lg last:rounded-b-lg"
                   onClick={() => handleSelectVolunteer(volunteer)}
                 >
                   <div className="flex items-center justify-between">
@@ -321,7 +347,7 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
           {volunteerLoading && (
             <p className="text-sm text-blue-600 flex items-center gap-2 mt-2">
               <span className="animate-spin">⏳</span>
-              Buscando voluntarios...
+              Buscando voluntarios... 
             </p>
           )}
         </div>
@@ -346,10 +372,10 @@ function ReturnTool({ onToolUpdate, scannedTool, onToolProcessed }: ReturnToolPr
         {/* Botón submit */}
         <Button
           type="submit"
-          disabled={! selectedTool || !selectedTool.inUse || form.formState.isSubmitting}
-          className="w-full py-5 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+          disabled={!selectedTool || !selectedTool.inUse || form.formState.isSubmitting}
+          className="w-full py-5 text-base font-semibold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
         >
-          {form.formState. isSubmitting ? (
+          {form. formState.isSubmitting ? (
             <span className="flex items-center gap-2">
               <span className="animate-spin">⏳</span>
               Procesando...

@@ -53,10 +53,21 @@ function EgressTool({ onToolUpdate, scannedTool, onToolProcessed }: EgressToolPr
 
   // 🔥 Efecto para manejar herramienta escaneada
   useEffect(() => {
-    if (scannedTool) {
-      handleSelectTool(scannedTool);
+    if (scannedTool && scannedTool.id) {
+    console.log('Herramienta escaneada recibida (Egreso):', scannedTool);
+    
+    // Validar que esté disponible
+    if (scannedTool.inUse) {
+      toast.error(`La herramienta "${scannedTool.name}" ya está en uso`);
+      if (onToolProcessed) onToolProcessed();
+      return;
     }
-  }, [scannedTool]);
+
+    // Seleccionar automáticamente
+    handleSelectTool(scannedTool);
+    console.log('Herramienta seleccionada para egreso:', scannedTool. name);
+  }
+}, [scannedTool?. id]);
 
   const getDbUserId = async (): Promise<number | null> => {
     if (!user?. id) return null;
@@ -157,7 +168,7 @@ function EgressTool({ onToolUpdate, scannedTool, onToolProcessed }: EgressToolPr
   const handleSelectTool = (tool: Tool) => {
     if (tool.inUse) return;
     setSelectedTool(tool);
-    form.setValue("toolId", tool. id, { shouldValidate: true });
+    form.setValue("toolId", tool.id, { shouldValidate: true });
     setSearchTerm(tool.name);
     setTools([]);
   };
@@ -208,7 +219,7 @@ function EgressTool({ onToolUpdate, scannedTool, onToolProcessed }: EgressToolPr
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
 
-          {tools.length > 0 && (
+          {tools.length > 0 && ! selectedTool && (
             <ul className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-xl mt-2 max-h-64 overflow-y-auto">
               {tools.map((tool: Tool) => (
                 <li

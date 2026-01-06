@@ -67,7 +67,7 @@ export default function BarcodeScanner(config: ScannerConfig) {
               <div className="flex gap-2">
                 <button
                   onClick={() => actions.setShowCameraSelect(! state.showCameraSelect)}
-                  className="p-2.5 bg-white/95 hover:bg-white rounded-full shadow-lg transition-all hover:scale-105"
+                  className="p-2.5 bg-white/95 hover:bg-white rounded-full shadow-lg transition-all hover:scale-105 scroll-auto"
                   title="Cambiar cámara"
                 >
                   <Camera className="h-4 md:h-6 w-4 md:w-6 text-gray-700" />

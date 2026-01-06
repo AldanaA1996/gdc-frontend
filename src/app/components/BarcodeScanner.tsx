@@ -51,14 +51,16 @@ export default function BarcodeScanner(config: ScannerConfig) {
 
       {/* Video preview */}
       <div className="relative w-full max-w-md mx-auto">
-        <div className="relative overflow-hidden rounded-lg shadow-2xl">
-          <video 
-            ref={videoRef} 
-            className="w-full h-auto min-h-[200px] max-h-[500px] object-cover aspect-video bg-black" 
-            playsInline 
-            muted 
-            autoPlay
-          />
+        <div className="relative rounded-lg shadow-2xl overflow-visible">
+          <div className="overflow-hidden rounded-lg">
+            <video 
+              ref={videoRef} 
+              className="w-full h-auto min-h-[200px] max-h-[500px] object-cover aspect-video bg-black" 
+              playsInline 
+              muted 
+              autoPlay
+            />
+          </div>
           
           {/* Barra superior de controles */}
           {state.running && (
@@ -67,7 +69,7 @@ export default function BarcodeScanner(config: ScannerConfig) {
               <div className="flex gap-2">
                 <button
                   onClick={() => actions.setShowCameraSelect(! state.showCameraSelect)}
-                  className="p-2.5 bg-white/95 hover:bg-white rounded-full shadow-lg transition-all hover:scale-105 scroll-auto"
+                  className="p-2.5 bg-white/95 hover:bg-white rounded-full shadow-lg transition-all hover:scale-105"
                   title="Cambiar cámara"
                 >
                   <Camera className="h-4 md:h-6 w-4 md:w-6 text-gray-700" />
@@ -130,7 +132,7 @@ export default function BarcodeScanner(config: ScannerConfig) {
 
           {/* Selector de cámara */}
           {state.showCameraSelect && state.running && state.devices.length > 0 && (
-            <div className="absolute top-16 left-3 right-3 bg-white/98 backdrop-blur-sm rounded-xl shadow-2xl p-3 z-20 max-h-60 overflow-y-auto">
+            <div className="absolute top-16 left-3 right-3 bg-white/98 backdrop-blur-sm rounded-xl shadow-2xl p-3 z-20 max-h-[60vh] overflow-y-auto overscroll-contain">
               <p className="text-xs font-semibold text-gray-700 mb-2 px-1">
                 📷 Seleccionar cámara ({state.devices.length})
               </p>

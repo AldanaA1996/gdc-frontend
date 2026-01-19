@@ -1,0 +1,27 @@
+---
+import LoginLayout from "@/components/Layout/LoginLayout.astro";
+import LayoutPage from "@/components/Layout/LayoutPage.astro";
+import LoginComponent from "@/app/components/page/Login"; 
+---
+<style>
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-image: url('/images/bgStockly.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-color: #f5f5f5;
+  }
+</style>
+<LoginLayout title="Login">
+  <LayoutPage>
+    
+    <div class="login-container">
+      <LoginComponent client:only="react" />
+    </div>
+  </LayoutPage>
+</LoginLayout>
